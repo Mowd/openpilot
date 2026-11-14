@@ -3,14 +3,14 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-15
+最後更新：2026-11-15（原廠 AEB／FCW 改為共用）
 
 ## 分支
 
 | 項目 | MG HS PHEV | MG ZS |
 |---|---|---|
 | openpilot 分支 | `Mowd/openpilot` `hs-phev` | `Mowd/openpilot` `zs` |
-| opendbc 分支 | `Mowd/opendbc` `hs-phev` | `Mowd/opendbc` `zs`（從 `hs-phev` 開出，多一個 MG_ZS commit） |
+| opendbc 分支 | `Mowd/opendbc` `hs-phev` | `Mowd/opendbc` `zs`（從 `hs-phev` 開出，加上 MG_ZS commit，之後用 merge 同步 hs-phev） |
 | openpilot 基底 | commaai master 2026-11-12（d2200f1） | commaai master 2026-11-13（77536e6） |
 | 參數來源 | 原 `hs` 分支 + 實車 log | 朋友的 `mg-zs` 分支 |
 | 測試者 | 車主本人（comma four） | 朋友 |
@@ -43,7 +43,7 @@
 |---|---|---|
 | 方向燈 | 撥桿位置 `DircnIndLampSwStsHSC2`，短撥維持 1 秒 | 燈號位元 `BlinkerLeft/Right`（mg-zs） |
 | EPS 故障偵測（狀態 3 = 永久故障） | 有 | **沒有**：EPS 型號不同，狀態意義未確認 |
-| 原廠 AEB／FCW 警示 | 沒有（未驗證） | 有（mg-zs：`AEBMsgReqHSC2 == 2`、`FCWrnngSts == 1`） |
+| 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | 同 HS（mg-zs 原本只認 FCW 第 1 級、AEB 只看雷達） |
 | 停車起步（短按 RES） | 有，待實車驗證 | 有，未驗證 |
 | 取消原廠巡航 | 有，待實車驗證 | 有，未驗證 |
 | 巡航按鍵事件、主開關 | 有，SET/RES/加減速已用 log 驗證 | 有，未驗證 |

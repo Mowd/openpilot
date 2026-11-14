@@ -62,7 +62,8 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 轉向故障：攝影機 LDW 故障算暫時故障，EPS 狀態 3 算永久故障。EPS 狀態 4（駕駛用力打方向盤後的鎖定）刻意不算，因為要等再次送出轉向請求才會解除
 - [ ] 低速轉向鎖定要用 `lowSpeedAlert`，不要當成故障（要先確認 HS 有沒有這種情況）
 - [ ] `accFaulted`、`carFaultedNonCritical`、`carNotReady`、`vehicleSensorsInvalid` 都正確回報（`accFaulted` 目前取自攝影機 TJAICA 故障，未驗證）
-- [ ] 解析 ESP 關閉／作動、原廠 AEB／FCW 狀態
+- [ ] 解析 ESP 關閉／作動（還沒做）
+- [ ] 原廠 AEB／FCW 狀態：已實作。`stockFcw` 是 FCW 警示等級不為 0；`stockAeb` 是雷達 AEB 作動，或 ABS 回應已執行 AEB 減速。重播兩趟 log 沒有誤報，但 log 裡沒發生過警示或 AEB。要在停車時改車上的 FCW 靈敏度、關閉 AEB，確認訊號跟著變
 - [ ] 偵測原廠 LKAS 設定（`invalidLkasSetting`）、非自適應巡航（`cruiseState.nonAdaptive`），如果有需要
 
 ## 5. 按鍵與巡航狀態
