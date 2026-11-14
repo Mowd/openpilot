@@ -67,10 +67,11 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 5. 按鍵與巡航狀態
 
-- [ ] SET、RES、Cancel、主開關、加速、減速、車距按鍵都轉成 `buttonEvents`（目前完全沒有解析）
-- [ ] 按下、放開各只觸發一次，按住不會重複啟用
-- [ ] 短按、長按、同時按都處理正確
-- [ ] 巡航主開關狀態要真實反映。HS 的 `cruiseState.available` 目前一律是 True
+- [ ] SET、RES、Cancel、加速、減速、車距按鍵都轉成 `buttonEvents`（已實作。SET、RES、加速、減速已用 log 重播驗證；Cancel、車距鍵在 log 裡沒按過，待實車驗證）
+- [ ] 主開關按鍵：0x1E1 的 `CCSwStsOnSwA` 在所有 log 中都是 1，不像按鍵，所以沒有產生 `mainCruise`。要實車關一次 ACC 主開關，看這個位元和 ACC 狀態怎麼變
+- [x] 按下、放開各只觸發一次（log 重播：23 次按壓，每次各一個 press 和一個 release）
+- [ ] 短按、長按、同時按都處理正確（log 裡只有短按）
+- [ ] 巡航主開關狀態要真實反映：`cruiseState.available` 已改成 ACC 狀態不是 0（關閉），跟 MG 5 EV 相同。但 log 裡從沒出現過狀態 0，待實車關主開關驗證
 - [x] 巡航啟用：駕駛踩油門介入（狀態 3）、停車中（狀態 5、6）都維持啟用
 - [x] `cruiseState.standstill` 只在需要按 RES 才能起步時為 true（狀態 6）
 - [ ] 設定速度的變更、單位切換、最低／最高設定速度都正確
@@ -144,9 +145,8 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 下一步建議順序
 
-1. 上車驗證這一版：自動辨識車型、短按 RES 起步、取消巡航
-2. 按鍵事件與巡航主開關（跟取消用同一個訊息 0x1E1）
-3. counter／checksum 檢查（carstate 和 safety 都要）
-4. 車門監看補齊、手煞車／Auto Hold
-5. harness 款式確認
-6. 選一段公開 route，整理成英文 PR
+1. 上車驗證這一版：自動辨識車型、短按 RES 起步、取消巡航、按 Cancel 和車距鍵、關一次 ACC 主開關
+2. counter／checksum 檢查（carstate 和 safety 都要）
+3. 車門監看補齊、手煞車／Auto Hold
+4. harness 款式確認
+5. 選一段公開 route，整理成英文 PR
