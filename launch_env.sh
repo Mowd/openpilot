@@ -20,3 +20,6 @@ if [ -z "$AGNOS_VERSION" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+
+# MG ZS test build: force the MG_ZS fingerprint (as in the mg-zs branch) until FW auto-fingerprinting is verified on the car
+export FINGERPRINT="MG_ZS"
