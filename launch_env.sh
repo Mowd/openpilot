@@ -20,7 +20,3 @@ if [ -z "$AGNOS_VERSION" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
-
-# 暫時：強制指定 MG HS PHEV 車型。fingerprints.py 裡的 HS 韌體版本號尚未在實車驗證，
-# 取得實車 carFw 並更新 fingerprints.py 後移除此行
-export FINGERPRINT="MG_HS"
