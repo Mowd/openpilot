@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-14
+最後更新：2026-11-15
 
 ---
 
@@ -27,7 +27,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 2. 車型辨識與參數
 
-- [ ] 多次冷啟動都能正確辨識，不靠強制 `FINGERPRINT` 或快取（已移除強制指定，待實車驗證）
+- [x] 多次冷啟動都能正確辨識，不靠強制 `FINGERPRINT` 或快取（2026-11-15 熄火重開兩次，`fingerprintSource` 都是 `fw`，三個 ECU 都在 bus 0 回應）
 - [x] 韌體查詢用正確的 ECU 位址與 bus（HS 用 bus 0，MG 5 EV 保留 bus 1）
 - [ ] 韌體查詢不會讓儀表板出現故障碼（待實車驗證）
 - [ ] 精確與模糊辨識都能區分需要不同控制的車款，例如 MG HS 汽油版、沒有 ACC 的等級
@@ -48,8 +48,8 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 4. 車輛狀態
 
-- [ ] 安全帶：扣上、解開都正確更新 `seatbeltUnlatched`（已實作，待實車驗證）
-- [ ] 車門：每個車門分別開關都正確，全部關上前 `doorOpen` 都維持 true。HS 目前只監看駕駛座和副駕駛座
+- [x] 安全帶：扣上、解開都正確更新 `seatbeltUnlatched`（實車：啟用中解開，openpilot 立即解除，原廠 ACC 同時自己回到 Standby）
+- [x] 車門：每個車門分別開關都正確，全部關上前 `doorOpen` 都維持 true。原本讀的 `DrvrDoorOpenSts_H1_Safety`（bit 47）開駕駛座門時不會變，已改成四個車門的原廠訊號，用實車 log 重播四個門都正確，行駛中沒有誤判
 - [x] 檔位：P、R、N、D 都有解析，不認得的值回報為 unknown，不會被當成 D
 - [x] 煞車：用駕駛煞車壓力判斷，門檻跟 safety 一致
 - [x] 油門：駕駛只要踩一點就是 `gasPressed`，巡航中也一樣，不會被 ACC 自己的加速誤判
@@ -63,16 +63,17 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [ ] 低速轉向鎖定要用 `lowSpeedAlert`，不要當成故障（要先確認 HS 有沒有這種情況）
 - [ ] `accFaulted`、`carFaultedNonCritical`、`carNotReady`、`vehicleSensorsInvalid` 都正確回報（`accFaulted` 目前取自攝影機 TJAICA 故障，未驗證）
 - [ ] 解析 ESP 關閉／作動（還沒做）
-- [ ] 原廠 AEB／FCW 狀態：已實作。`stockFcw` 是 FCW 警示等級不為 0；`stockAeb` 是雷達 AEB 作動，或 ABS 回應已執行 AEB 減速。重播兩趟 log 沒有誤報，但 log 裡沒發生過警示或 AEB。要在停車時改車上的 FCW 靈敏度、關閉 AEB，確認訊號跟著變
+- [x] 原廠 AEB／FCW 設定：車上把 FCW 靈敏度改成 1、3 再改回 2，`FCWSnstvtLvl` 跟著變；關閉 AEB 時 `AEBPedtrnDspCmd` 從 2 變 1。改設定都沒有讓 `stockFcw`／`stockAeb` 誤報
+- [ ] 原廠 AEB／FCW 警示：已實作。`stockFcw` 是 FCW 警示等級不為 0；`stockAeb` 是雷達 AEB 作動，或 ABS 回應已執行 AEB 減速。重播三趟 log 都沒有誤報，但還沒真的發生過警示或 AEB，無法安全地刻意觸發
 - [ ] 偵測原廠 LKAS 設定（`invalidLkasSetting`）、非自適應巡航（`cruiseState.nonAdaptive`），如果有需要
 
 ## 5. 按鍵與巡航狀態
 
-- [ ] SET、RES、Cancel、加速、減速、車距按鍵都轉成 `buttonEvents`（已實作。SET、RES、加速、減速已用 log 重播驗證；Cancel、車距鍵在 log 裡沒按過，待實車驗證）
-- [ ] 主開關按鍵：0x1E1 的 `CCSwStsOnSwA` 在所有 log 中都是 1，不像按鍵，所以沒有產生 `mainCruise`。要實車關一次 ACC 主開關，看這個位元和 ACC 狀態怎麼變
+- [ ] SET、RES、Cancel、加速、減速、車距按鍵都轉成 `buttonEvents`（已實作。SET、RES、加速、減速、Cancel 都已實車驗證；車距鍵在兩趟 log 裡都沒有訊號，跟車距離等級也一直是 3，待確認）
+- [x] 主開關：0x1E1 的 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵。實車用 Cancel 關閉 ACC 時它和 ACC 狀態同時變 0，按 RES 後同時恢復成 1，所以不產生 `mainCruise`
 - [x] 按下、放開各只觸發一次（log 重播：23 次按壓，每次各一個 press 和一個 release）
 - [ ] 短按、長按、同時按都處理正確（log 裡只有短按）
-- [ ] 巡航主開關狀態要真實反映：`cruiseState.available` 已改成 ACC 狀態不是 0（關閉），跟 MG 5 EV 相同。但 log 裡從沒出現過狀態 0，待實車關主開關驗證
+- [x] 巡航主開關狀態要真實反映：`cruiseState.available` 是 ACC 狀態不是 0。實車關閉 ACC 時變 False，畫面出現 wrongCarMode，恢復後變回 True
 - [x] 巡航啟用：駕駛踩油門介入（狀態 3）、停車中（狀態 5、6）都維持啟用
 - [x] `cruiseState.standstill` 只在需要按 RES 才能起步時為 true（狀態 6）
 - [ ] 設定速度的變更、單位切換、最低／最高設定速度都正確
@@ -81,10 +82,10 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 - [ ] 按 SET／RES 只啟用一次，而且只在車輛準備好時啟用
 - [ ] 安全帶、車門、檔位、手煞車、故障造成的拒絕啟用和解除都符合預期
-- [ ] 駕駛按實體 Cancel 時，openpilot 和原廠巡航都會解除（待實車驗證）
-- [ ] 軟體取消：openpilot 解除但原廠 ACC 還在時送出 Cancel（已實作，每秒短按一次，待實車驗證）
+- [x] 駕駛按實體 Cancel 時，openpilot 和原廠巡航都會解除（實車：ACC 狀態 2 → 4 → 1）
+- [ ] 軟體取消：openpilot 解除但原廠 ACC 還在時送出 Cancel（已實作，每秒短按一次）。實車只在駕駛按 Cancel 的同一刻送出過 1 幀；解開安全帶、踩煞車時原廠 ACC 會自己解除，不需要送。還沒遇過真的需要靠它解除的情況
 - [x] 取消優先於 SET／RES；重複取消不會恢復或重新啟用巡航（carcontroller 先判斷取消；safety 擋掉 Cancel 同時加其他按鍵）
-- [ ] 關閉巡航主開關會解除，而且不會意外重新啟用
+- [ ] 關閉巡航主開關會解除，而且不會意外重新啟用（停車未啟用時關閉會顯示 wrongCarMode；啟用中關閉還沒測）
 - [ ] 放開踏板、關上車門、扣上安全帶、故障解除後，不會自己重新啟用
 - [x] 轉向請求位元用 `CC.latActive`
 
@@ -146,8 +147,8 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 下一步建議順序
 
-1. 上車驗證這一版：自動辨識車型、短按 RES 起步、取消巡航、按 Cancel 和車距鍵、關一次 ACC 主開關
+1. 上車驗證：短按 RES 起步、車距鍵（其他項目 2026-11-15 已驗證）
 2. counter／checksum 檢查（carstate 和 safety 都要）
-3. 車門監看補齊、手煞車／Auto Hold
+3. 手煞車／Auto Hold
 4. harness 款式確認
 5. 選一段公開 route，整理成英文 PR
