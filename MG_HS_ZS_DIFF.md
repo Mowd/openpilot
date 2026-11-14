@@ -3,7 +3,7 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-15（HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
+最後更新：2026-11-15（合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
 
 ## 分支
 
@@ -11,7 +11,7 @@
 |---|---|---|
 | openpilot 分支 | `Mowd/openpilot` `hs-phev` | `Mowd/openpilot` `zs` |
 | opendbc 分支 | `Mowd/opendbc` `hs-phev` | `Mowd/opendbc` `zs`（從 `hs-phev` 開出，加上 MG_ZS commit，之後用 merge 同步 hs-phev） |
-| openpilot 基底 | commaai master 2026-11-12（d2200f1） | commaai master 2026-11-13（77536e6） |
+| openpilot 基底 | commaai master 2026-11-14（cec317f，merge） | commaai master 2026-11-14（cec317f，merge） |
 | 參數來源 | 原 `hs` 分支 + 實車 log | 朋友的 `mg-zs` 分支 |
 | 測試者 | 車主本人（comma four） | 朋友 |
 | 上游 PR | 目標 | 暫不考慮 |
