@@ -7,6 +7,12 @@
 - **commit**：od = opendbc（`Mowd/opendbc`），op = openpilot（`Mowd/openpilot`）。HS／ZS 各一個時用「／」分開。
 - 兩車的參數、功能差異見 `MG_HS_ZS_DIFF.md`（在 `hs-phev`）。這份紀錄在兩個分支內容相同，每次變更兩邊一起更新。
 
+## 2026-11-16
+
+| 時間 | 分支 | 變更 | 狀態 | commit |
+|---|---|---|---|---|
+| 00:14 | ZS | 改用韌體自動辨識車型，拿掉強制 `FINGERPRINT="MG_ZS"`。朋友 11/15 三次發動（route 05–07）：EPS、相機、雷達都在 bus 0 回應，韌體版本精確比對到 MG_ZS | 🔶 | op `00186a6e8` |
+
 ## 2026-11-15
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
@@ -21,7 +27,7 @@
 | 05:07 | HS、ZS | 車門改讀四個車門的原廠訊號（HS 停車時逐一開關驗證） | ✅ HS | od `1f9c2330`、`e8b5c081`<br>op `5f395f116`、`f33bf9a47` |
 | 03:36 | HS、ZS | 解析原廠 AEB／FCW 警示：FCW 任一級警示，AEB 作動時通知 openpilot | 🔶 | od `499611bb`<br>op `84ecd18eb`、`a86760550` |
 | 03:11 | HS | 加入 HS／ZS 差異表 `MG_HS_ZS_DIFF.md` | — | op `ff722acd8` |
-| 03:06 | ZS | **新增 MG ZS 2025 車型**（`MG_ZS`），沿用 HS 的 ADAS 邏輯和朋友 `mg-zs` 分支的參數；先強制 `FINGERPRINT="MG_ZS"` | ✅ | od `4fb4f6a4`<br>op `c49751c81` |
+| 03:06 | ZS | **新增 MG ZS 2025 車型**（`MG_ZS`），沿用 HS 的 ADAS 邏輯和朋友 `mg-zs` 分支的參數；先強制 `FINGERPRINT="MG_ZS"`（11/16 改回自動辨識） | ✅ | od `4fb4f6a4`<br>op `c49751c81` |
 | 02:56 | HS、ZS | 解析巡航按鍵事件（SET、RES、加減速、Cancel、車距）；主開關改看 ACC 狀態 | ✅ HS（車距鍵 11/15 route 18 確認：原廠車距 3→2→1；長按加速 11/15 route 19 確認：每 0.2 秒 +1 km/h，30→35；長按減速未測；ZS route 05–07 確認 SET、RES、加減速、Cancel，長按每 0.2 秒 ±1 km/h，短按一次 ±5 km/h） | od `b83cff68`<br>op `62af5bbb3` |
 
 ## 2026-11-14
