@@ -11,8 +11,8 @@
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
 |---|---|---|---|---|
-| 17:33 | HS、ZS | **修正：踩煞車被當成撥桿取消。** openpilot 常比原廠 ACC 早 0.1–0.2 秒偵測到煞車，會先解除並送出 Cancel，讓 ACC 走撥桿取消的路徑（作用中→Brake Only→待命）。改成踩煞車期間和放開後 1 秒內不送 Cancel，讓 ACC 自己回到待命。11/14 log 重播：5 次煞車原本都送 Cancel，現在都不送 | 🔶 | od `13eee668`／`8266c65f`<br>op `09cec5647`／`7e1d542ce` |
-| 17:29 | HS、ZS | **儀表 LKA 燈號。** openpilot 送出的轉向訊息原本固定送「LKA 關閉」，儀表燈號不亮。改成 openpilot 控制方向盤時送「作用中」，其他時候照抄原廠相機的值（HS 平常是「待命」）。待確認燈號和 EPS 都正常 | 🔶 | od `0b5f84a3`／`098e8644`<br>op `d747f3085`／`bb09fe51a` |
+| 17:33 | HS、ZS | **修正：踩煞車被當成撥桿取消。** openpilot 常比原廠 ACC 早 0.1–0.2 秒偵測到煞車，會先解除並送出 Cancel，讓 ACC 走撥桿取消的路徑（作用中→Brake Only→待命）。改成踩煞車期間和放開後 1 秒內不送 Cancel，讓 ACC 自己回到待命。11/14 log 重播：5 次煞車原本都送 Cancel，現在都不送。11/15 實車（route 18）：5 次踩煞車解除，ACC 都直接回到待命，沒送 Cancel | ✅ HS | od `13eee668`／`8266c65f`<br>op `09cec5647`／`7e1d542ce` |
+| 17:29 | HS、ZS | **儀表 LKA 燈號。** openpilot 送出的轉向訊息原本固定送「LKA 關閉」，儀表燈號不亮。改成 openpilot 控制方向盤時送「作用中」，其他時候照抄原廠相機的值（HS 平常是「待命」）。11/15 實車（route 18）：送「作用中」時 EPS 照常接受扭力；儀表燈號待車主確認 | 🔶 燈號 | od `0b5f84a3`／`098e8644`<br>op `d747f3085`／`bb09fe51a` |
 | 12:13 | ZS | **修正：Unknown Vehicle Variant。** AEB 判斷不再讀 0x251（`SCS_HSC2_FrP24`）。ZS 沒有這個訊息，讀了會讓 CAN 永遠無效。朋友的 rlog 證實只缺這個訊息 | 🔶 | od `5c725512`<br>op `8598fbbb5` |
 | 07:41 | ZS | 巡航按鍵訊息 0x1E1 改為選用，沒收到也不會讓 CAN 無效（不是 Unknown Vehicle Variant 的主因，主因見 12:13） | — | od `07239658`<br>op `bf23cd50d` |
 | 07:17 | HS、ZS | openpilot 基底更新：合併 commaai/openpilot master（`cec317f`，2026-11-14） | ✅ | op `b33137f13`／`d88bd149d` |
@@ -31,7 +31,7 @@
 | 21:38 | HS、ZS | openpilot 解除時，如果原廠 ACC 還開著就送 Cancel（踩煞車的情況在 11/15 17:33 修正） | ✅ 實體 Cancel | od `3ffcb4ee`<br>op `13df32ad8` |
 | 21:28 | HS | 改用韌體自動辨識車型（只查 bus 0），拿掉強制 `FINGERPRINT` | ✅ 兩次冷啟動 | od `264274e9`<br>op `6f4aa19c9` |
 | 20:55 | HS 專屬 | 偵測 EPS 故障（EPS 狀態 3：要求超過 3 Nm 後整趟不再接受扭力） | 🔶 | od `9f00a759`<br>op `e82ba018c` |
-| 20:46 | HS、ZS | 停車起步改為短按 RES（按住不放 ACC 不會動作） | 🔶 | od `f06bda90`<br>op `64d914158` |
+| 20:46 | HS、ZS | 停車起步改為短按 RES（按住不放 ACC 不會動作）。11/15 實車（route 18）兩次：雷達發出起步提示後立刻送 RES，約 1 秒起步 | ✅ HS | od `f06bda90`<br>op `64d914158` |
 | 14:59 | HS、ZS | 修正：轉向扭力變化速度 7／11 沒有生效 | ✅ | od `d1082dcb`<br>op `26397b31a` |
 | 14:53 | HS、ZS | 轉向扭力增加／減少速度改為 7／11（ZS 減少速度另外是 8） | ✅ | od `b302e089`<br>op `54ed7c48b` |
 
@@ -40,7 +40,7 @@
 | 時間 | 分支 | 變更 | 狀態 | commit |
 |---|---|---|---|---|
 | 23:32 | HS 專屬 | 方向燈短撥時撥桿訊號只出現一下，改成維持 1 秒 | ✅ | od `b1267eb4`<br>op `9d6ce8a7c` |
-| 22:29 | HS、ZS | 停車起步（stop & go）：前車離開後自動送 RES 起步 | 🔶 | od `69f7f7c3`<br>op `a35bce820` |
+| 22:29 | HS、ZS | 停車起步（stop & go）：前車離開後自動送 RES 起步（11/14 20:46 改為短按後實車驗證） | ✅ HS | od `69f7f7c3`<br>op `a35bce820` |
 | 03:19 | HS | 加入實車 ECU 韌體版本號（EPS、相機、雷達） | ✅ | od `f61c6a40`<br>op `56bcfb901` |
 | 03:13 | HS、ZS | 新增除錯工具：讀 ECU 韌體版本、找方向燈 CAN 位元 | — | op `9a263fa1f` |
 | 02:50 | HS、ZS | 車況改用原 `hs` 分支的讀取方式，不套用 MG 5 EV 的假設 | ✅ | od `2f1e9265`<br>op `d72fa1a3a` |
