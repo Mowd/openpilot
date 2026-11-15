@@ -19,6 +19,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_curvature import LatControlCurvature
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
+from openpilot.selfdrive.controls.lib.curve_speed import CurveSpeed
 from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
@@ -51,6 +52,10 @@ class Controls:
     self.calibrated_pose: Pose | None = None
 
     self.LoC = LongControl(self.CP)
+    # fork: curve speed for cars whose stock ACC controls the speed (the car port moves its set speed)
+    self.curve_speed = CurveSpeed()
+    self.curve_speed_enabled = False
+    self.frame = 0
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
@@ -64,6 +69,9 @@ class Controls:
 
   def update(self):
     self.sm.update(15)
+    if self.frame % 100 == 0:
+      self.curve_speed_enabled = self.params.get_bool("CurveSpeedControl")
+    self.frame += 1
     if self.sm.updated["extrinsicsCalibration"]:
       self.pose_calibrator.feed_extrinsics_calibration(self.sm['extrinsicsCalibration'])
     if self.sm.updated["deviceMotion"]:
@@ -161,6 +169,8 @@ class Controls:
     CC.cruiseControl.override = CC.enabled and not CC.longActive and self.CP.openpilotLongitudinalControl
     CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
     CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
+    curve_speed_active = self.curve_speed_enabled and CC.enabled and self.CP.pcmCruise and not self.CP.openpilotLongitudinalControl
+    CC.cruiseControl.speedTarget = self.curve_speed.update(curve_speed_active, self.sm['modelV2'], self.sm.updated['modelV2'])
 
     hudControl = CC.hudControl
     hudControl.setSpeed = float(CS.vCruiseCluster * CV.KPH_TO_MS)
