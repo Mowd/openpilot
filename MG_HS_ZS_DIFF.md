@@ -3,7 +3,7 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-15（ZS：AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
+最後更新：2026-11-15（ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
 
 ## 分支
 
@@ -26,7 +26,7 @@
 | 扭力參數 `override.toml` | `[0.9, 2.5, 0.19]`（openpilot 實車學習值，約 4260 個高速資料點） | `[1.2, 2.5, 0.18]`（mg-zs，可用朋友的 log 算學習值） |
 | 扭力上限 | 300（實測 EPS 硬上限 3.0 Nm） | 300（未實測上限） |
 | 扭力增加／減少速度 | 7 / 11 | 7 / 8（mg-zs 原本 8/8，8 超過 ISO 11270 改 7） |
-| 車型辨識 | 韌體自動辨識（實車驗證：兩次冷啟動都成功） | 強制 `FINGERPRINT="MG_ZS"`（`launch_env.sh`） |
+| 車型辨識 | 韌體自動辨識（實車驗證：兩次冷啟動都成功） | 強制 `FINGERPRINT="MG_ZS"`（`launch_env.sh`）。朋友 rlog（`bf23cd5`）：EPS 0x721、相機 0x733、雷達 0x732 都在 bus 0 回應，三個版本都和 MG_ZS 完全相符，確認 CAN 正常後可以拿掉強制設定 |
 
 ## ECU 韌體
 
@@ -43,10 +43,10 @@
 |---|---|---|
 | 方向燈 | 撥桿位置 `DircnIndLampSwStsHSC2`，短撥維持 1 秒 | 燈號位元 `BlinkerLeft/Right`（mg-zs） |
 | EPS 故障偵測（狀態 3 = 永久故障） | 有 | **沒有**：EPS 型號不同，狀態意義未確認 |
-| 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | FCW 同 HS；AEB 只看雷達：ZS 沒有 `SCS_HSC2_FrP24`（0x251），讀了會讓 CAN 永遠無效（Unknown Vehicle Variant） |
+| 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | FCW 同 HS；AEB 只看雷達：ZS 沒有 `SCS_HSC2_FrP24`（0x251），讀了會讓 CAN 永遠無效（Unknown Vehicle Variant）。朋友 rlog（`bf23cd5`）的 CANParser 警告證實只缺 0x251，`8598fbb` 已修正，待實車確認 |
 | 停車起步（短按 RES） | 有，待實車驗證 | 有，未驗證 |
 | 取消原廠巡航 | 有。實體 Cancel 已實車驗證；安全帶、煞車時原廠 ACC 會自己解除，還沒遇過需要軟體取消的情況 | 有，未驗證 |
-| 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵待確認 | 0x1E1 設為選用：不確定 ZS 有沒有 0x1E1。沒收到時沒有按鍵事件，也不會自動起步或送 Cancel，待朋友的 rlog 確認（Unknown Vehicle Variant 的主因是 0x251，見 AEB 列） |
+| 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵待確認 | 0x1E1 設為選用（沒收到時沒有按鍵事件，也不會自動起步或送 Cancel）。朋友 rlog 證實 ZS 的 bus 0 有 0x1E1（約 40 Hz），按鍵功能應該可用，待實車驗證 |
 | 煞車門檻 | 大於 1 格（75 kPa），與 safety 一致 | 同 HS（mg-zs 原本大於 0） |
 | 車門 | 四個車門的原廠訊號（實車驗證） | 同 HS（mg-zs 原本讀 bit 47 的 `DrvrDoorOpenSts_H1_Safety` 和副駕，HS 上 bit 47 不會變，待朋友驗證） |
 | 檔位、油門、安全帶、盲點 | 共用 | 共用 |
