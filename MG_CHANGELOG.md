@@ -25,8 +25,8 @@
 | 07:41 | ZS | 巡航按鍵訊息 0x1E1 改為選用，沒收到也不會讓 CAN 無效（不是 Unknown Vehicle Variant 的主因，主因見 12:13） | — | od `07239658`<br>op `bf23cd50d` |
 | 07:17 | HS、ZS | openpilot 基底更新：合併 commaai/openpilot master（`cec317f`，2026-11-14） | ✅ | op `b33137f13`／`d88bd149d` |
 | 06:08 | HS 專屬 | 扭力參數改用 openpilot 實車學習值 `[0.9, 2.5, 0.19]`（原本 `[1.2, 2.5, 0.22]`）。ZS 維持 `[1.2, 2.5, 0.18]`。11/15 實車（route 18）：時速 30 的急彎都過得去，不會放棄（車主確認） | ✅ HS | od `873c9942`<br>op `21a7544f1` |
-| 05:07 | HS、ZS | 車門改讀四個車門的原廠訊號（HS 停車時逐一開關驗證） | ✅ HS | od `1f9c2330`、`e8b5c081`<br>op `5f395f116`、`f33bf9a47` |
-| 03:36 | HS、ZS | 解析原廠 AEB／FCW 警示：FCW 任一級警示，AEB 作動時通知 openpilot | 🔶 | od `499611bb`<br>op `84ecd18eb`、`a86760550` |
+| 05:07 | HS、ZS | 車門改讀四個車門的原廠訊號（HS 停車時逐一開關驗證）。ZS route 06：副駕、左後讀得到，**駕駛座門讀不到**（ZS 的駕駛座門在 47|2，也就是原 hs 分支的 `DrvrDoorOpenSts_H1_Safety`），右後待確認 | ✅ HS | od `1f9c2330`、`e8b5c081`<br>op `5f395f116`、`f33bf9a47` |
+| 03:36 | HS、ZS | 解析原廠 AEB／FCW 警示：FCW 任一級警示，AEB 作動時通知 openpilot。ZS route 06：在設定選單切換 FCW 靈敏度 1／2／3、關閉再打開 AEB，訊號都跟著變，`AEBMsgReq` 短暫出現的 4、5 只是提示訊息，沒有誤判成 AEB 作動 | 🔶 | od `499611bb`<br>op `84ecd18eb`、`a86760550` |
 | 03:11 | HS | 加入 HS／ZS 差異表 `MG_HS_ZS_DIFF.md` | — | op `ff722acd8` |
 | 03:06 | ZS | **新增 MG ZS 2025 車型**（`MG_ZS`），沿用 HS 的 ADAS 邏輯和朋友 `mg-zs` 分支的參數；先強制 `FINGERPRINT="MG_ZS"`（11/16 改回自動辨識） | ✅ | od `4fb4f6a4`<br>op `c49751c81` |
 | 02:56 | HS、ZS | 解析巡航按鍵事件（SET、RES、加減速、Cancel、車距）；主開關改看 ACC 狀態 | ✅ HS（車距鍵 11/15 route 18 確認：原廠車距 3→2→1；長按加速 11/15 route 19 確認：每 0.2 秒 +1 km/h，30→35；長按減速未測；ZS route 05–07 確認 SET、RES、加減速、Cancel，長按每 0.2 秒 ±1 km/h，短按一次 ±5 km/h） | od `b83cff68`<br>op `62af5bbb3` |
