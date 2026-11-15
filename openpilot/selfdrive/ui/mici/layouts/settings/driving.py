@@ -30,6 +30,11 @@ class DrivingLayoutMici(NavScroller):
                                                      "before curves, and go back to your speed after.\n" +
                                                      "Your car's own cruise control still brakes and keeps the distance.")
     curve_speed_toggle.set_visible(lambda: ui_state.CP is not None and ui_state.CP.brand == "mg" and ui_state.CP.pcmCruise)
+    lead_speed_toggle = BigParamControl("slow down early for slower cars", "LeadSpeedControl",
+                                        description="When openpilot sees the car ahead slowing down, lower the car's cruise set " +
+                                                    "speed early with the -/+ switches, so it brakes gently instead of late.\n" +
+                                                    "Not below 30 km/h: your car's own cruise control still does the final braking.")
+    lead_speed_toggle.set_visible(lambda: ui_state.CP is not None and ui_state.CP.brand == "mg" and ui_state.CP.pcmCruise)
     always_on_dm_toggle = BigParamControl("always-on driver monitor", "AlwaysOnDM", description="Monitor the driver even when openpilot is not engaged.")
     enable_openpilot = BigParamControl("enable openpilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback,
                                        description="Enable to use openpilot driver assistance.\n" +
@@ -39,6 +44,7 @@ class DrivingLayoutMici(NavScroller):
       self._personality_toggle,
       self._initial_cruise_speed,
       curve_speed_toggle,
+      lead_speed_toggle,
       ldw_toggle,
       always_on_dm_toggle,
       enable_openpilot,
@@ -47,6 +53,7 @@ class DrivingLayoutMici(NavScroller):
     # Toggle lists
     self._refresh_toggles = (
       ("CurveSpeedControl", curve_speed_toggle),
+      ("LeadSpeedControl", lead_speed_toggle),
       ("IsLdwEnabled", ldw_toggle),
       ("AlwaysOnDM", always_on_dm_toggle),
       ("OpenpilotEnabledToggle", enable_openpilot),
