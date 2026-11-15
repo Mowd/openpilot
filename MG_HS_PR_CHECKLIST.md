@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-16
+最後更新：2026-11-16（counter／checksum）
 
 ---
 
@@ -38,8 +38,8 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 ## 3. CAN 解析與訊息組裝
 
 - [ ] 訊息位址、長度、bus、頻率、byte 順序、正負號、比例、單位都驗證過
-- [ ] counter 與 checksum 用實車資料驗證，包含 counter 從最大值繞回 0。目前 HS 解析時全部略過
-- [ ] 訊息遺失、過期、格式錯誤或 checksum 錯誤時，會正確變成 CAN 無效狀態
+- [x] counter 與 checksum 用實車資料驗證，包含 counter 從最大值繞回 0（2026-11-16：5 條路線，車速、雷達、方向盤角度、ABS 是 CRC-8＋4 bit counter，EPS 是 MG 5 EV 的自訂 checksum，checksum 全部正確、counter 只在開機時跳；油門 0xC9 的 counter 會跳所以只檢查 checksum；煞車壓力 0x214 只有 2 bit counter）
+- [x] 訊息遺失、過期、格式錯誤或 checksum 錯誤時，會正確變成 CAN 無效狀態（用實車 log 故意改壞 0x23C、0x242、0x1EC 的 checksum 或 0x214 的 counter，CAN 都變成無效）
 - [ ] 頻率會變動的訊息，在 `get_can_parsers` 明確指定頻率
 - [ ] 開機時的預設值或無效值，不會被誤當成可以啟用
 - [x] 複製原廠訊息時保留其他欄位，而且用最新的資料（0x1E1 每次都從最新的閘道器訊息複製）
@@ -122,7 +122,8 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 未啟用時只允許送 Cancel；RES 只在啟用時允許，而且不能同時按其他鍵（fork 另外允許啟用中單獨送 −／+，送 PR 前要拿掉，見第 12 節）
 - [x] 轉向扭力大小、變化速度、駕駛扭力都有檢查
 - [ ] 送出訊息裡所有能控制車輛的欄位都有限制（0x1FD 的其他欄位，例如駕駛接管請求、震動等級，目前沒檢查）
-- [ ] counter／checksum 錯誤、訊息遺失、資料過期時會停止控制。HS 目前全部略過 counter 和 checksum
+- [x] counter／checksum 錯誤、訊息遺失、資料過期時會停止控制（車速、EPS、雷達檢查兩者，油門只檢查 checksum，煞車壓力只檢查 counter；5 條路線 safety 重播約 1,570 萬個訊框沒有誤判）
+- [ ] safety 重播時，原本就有部分 0x1FD 轉向訊息在啟用中被擋（route 18 約 1.8 萬次），改 counter／checksum 前後一樣，實車轉向正常，原因待查。官方 CI 也會跑 safety 重播，送 PR 前要解決
 - [x] 繼電器故障偵測涵蓋實際的 harness 架構（0x1FD 有檢查；0x1E1 閘道器本來就會送，所以不檢查）
 - [x] safety 測試涵蓋 `NON_EV` 旗標，而且會擋不允許的指令
 
@@ -150,7 +151,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 下一步建議順序
 
-1. counter／checksum 檢查（carstate 和 safety 都要）
+1. 查 safety 重播時 0x1FD 被擋的原因
 2. 手煞車／Auto Hold、ESP 關閉
 3. harness 款式確認、整理訊息收送表
 4. 選一段公開 route，整理成英文 PR（拿掉 fork 專屬功能）
