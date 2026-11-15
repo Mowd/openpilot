@@ -20,3 +20,15 @@ if [ -z "$AGNOS_VERSION" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+
+# nav alpha: comma's route API answers 403 without comma prime, so navd can use a personal Mapbox token instead
+# (MAPBOX_TOKEN, routes straight from api.mapbox.com). The token lives only on the device, never in this repo.
+MAPBOX_TOKEN_FILE="/data/mapbox_token"
+if [ -f "$MAPBOX_TOKEN_FILE" ]; then
+  MAPBOX_TOKEN_VALUE="$(tr -d '[:space:]' < "$MAPBOX_TOKEN_FILE")"
+  if [ -n "$MAPBOX_TOKEN_VALUE" ]; then
+    export MAPBOX_TOKEN="$MAPBOX_TOKEN_VALUE"
+  fi
+  unset MAPBOX_TOKEN_VALUE
+fi
+unset MAPBOX_TOKEN_FILE
