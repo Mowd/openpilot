@@ -3,7 +3,7 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-15（ZS：0x1E1 改為選用；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
+最後更新：2026-11-15（ZS：AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
 
 ## 分支
 
@@ -43,10 +43,10 @@
 |---|---|---|
 | 方向燈 | 撥桿位置 `DircnIndLampSwStsHSC2`，短撥維持 1 秒 | 燈號位元 `BlinkerLeft/Right`（mg-zs） |
 | EPS 故障偵測（狀態 3 = 永久故障） | 有 | **沒有**：EPS 型號不同，狀態意義未確認 |
-| 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | 同 HS（mg-zs 原本只認 FCW 第 1 級、AEB 只看雷達） |
+| 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | FCW 同 HS；AEB 只看雷達：ZS 沒有 `SCS_HSC2_FrP24`（0x251），讀了會讓 CAN 永遠無效（Unknown Vehicle Variant） |
 | 停車起步（短按 RES） | 有，待實車驗證 | 有，未驗證 |
 | 取消原廠巡航 | 有。實體 Cancel 已實車驗證；安全帶、煞車時原廠 ACC 會自己解除，還沒遇過需要軟體取消的情況 | 有，未驗證 |
-| 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵待確認 | 0x1E1 設為選用：第一次實車出現 Unknown Vehicle Variant（CAN 無效），懷疑 ZS 沒有 0x1E1。沒收到時沒有按鍵事件，也不會自動起步或送 Cancel，待朋友的 rlog 確認 |
+| 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵待確認 | 0x1E1 設為選用：不確定 ZS 有沒有 0x1E1。沒收到時沒有按鍵事件，也不會自動起步或送 Cancel，待朋友的 rlog 確認（Unknown Vehicle Variant 的主因是 0x251，見 AEB 列） |
 | 煞車門檻 | 大於 1 格（75 kPa），與 safety 一致 | 同 HS（mg-zs 原本大於 0） |
 | 車門 | 四個車門的原廠訊號（實車驗證） | 同 HS（mg-zs 原本讀 bit 47 的 `DrvrDoorOpenSts_H1_Safety` 和副駕，HS 上 bit 47 不會變，待朋友驗證） |
 | 檔位、油門、安全帶、盲點 | 共用 | 共用 |
@@ -55,6 +55,7 @@
 
 1. 新功能先在 `hs-phev` 完成、測試。
 2. 判斷 ZS 能不能用：共用的 ADAS／CAN 邏輯直接同步；只跟 HS 硬體有關的（例如 EPS 狀態意義、HS 的實測數值）先不套用到 ZS，或用 `CAR.MG_HS` 判斷限定。
+   **新讀任何 CAN 訊息都要注意**：CarState 讀到的訊息都會變成必要訊息，ZS 沒有就整個 CAN 無效。ZS 只能讀 mg-zs 用過的訊息（清單在 opendbc `zs` 的 `opendbc/car/mg/tests/test_mg.py`），其他的要用 `CAR.MG_HS` 限定或設為選用。
 3. opendbc：在 `zs` 上 `git merge hs-phev`（用 merge 不用 rebase，避免 force push 讓朋友裝置上的舊版本指到不存在的 commit），解決衝突後跑 `./test.sh`。
 4. openpilot：`zs` 的 opendbc 子模組指到新的 opendbc `zs` commit。
 5. 更新這張表，兩邊都 push。
