@@ -24,6 +24,12 @@ class DrivingLayoutMici(NavScroller):
     ldw_toggle = BigParamControl("lane departure warnings", "IsLdwEnabled",
                                  description="Warn when you drift across a detected lane line.\n" +
                                              "Only above 31 mph (50 km/h), with no turn signal.")
+    # fork: MG HS/ZS, openpilot lowers the stock ACC set speed with the cruise switches before curves
+    curve_speed_toggle = BigParamControl("slow down for curves", "CurveSpeedControl",
+                                         description="Lower the car's cruise set speed with the -/+ switches " +
+                                                     "before curves, and go back to your speed after.\n" +
+                                                     "Your car's own cruise control still brakes and keeps the distance.")
+    curve_speed_toggle.set_visible(lambda: ui_state.CP is not None and ui_state.CP.brand == "mg" and ui_state.CP.pcmCruise)
     always_on_dm_toggle = BigParamControl("always-on driver monitor", "AlwaysOnDM", description="Monitor the driver even when openpilot is not engaged.")
     enable_openpilot = BigParamControl("enable openpilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback,
                                        description="Enable to use openpilot driver assistance.\n" +
@@ -32,6 +38,7 @@ class DrivingLayoutMici(NavScroller):
     self._scroller.add_widgets([
       self._personality_toggle,
       self._initial_cruise_speed,
+      curve_speed_toggle,
       ldw_toggle,
       always_on_dm_toggle,
       enable_openpilot,
@@ -39,6 +46,7 @@ class DrivingLayoutMici(NavScroller):
 
     # Toggle lists
     self._refresh_toggles = (
+      ("CurveSpeedControl", curve_speed_toggle),
       ("IsLdwEnabled", ldw_toggle),
       ("AlwaysOnDM", always_on_dm_toggle),
       ("OpenpilotEnabledToggle", enable_openpilot),
