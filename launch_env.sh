@@ -21,9 +21,6 @@ fi
 
 export STAGING_ROOT="/data/safe_staging"
 
-# MG ZS test build: force the MG_ZS fingerprint (as in the mg-zs branch) until FW auto-fingerprinting is verified on the car
-export FINGERPRINT="MG_ZS"
-
 # nav alpha: comma's route API answers 403 without comma prime, so navd can use a personal Mapbox token instead
 # (MAPBOX_TOKEN, routes straight from api.mapbox.com). The token lives only on the device, never in this repo.
 MAPBOX_TOKEN_FILE="/data/mapbox_token"
