@@ -11,7 +11,7 @@
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
 |---|---|---|---|---|
-| 20:52 | HS、ZS | **導航：可改用自己的 Mapbox token。** route 16 的 log 顯示 comma 的路線 API 在沒有 comma prime 時回 403，所以一直「Waiting for route」。裝置上有 `/data/mapbox_token` 時，navd 改直接跟 Mapbox 要路線（token 只放裝置上，不進 repo）。地圖底圖還是跟 comma 要，可能一樣被擋 | 🔶 | op `461b28979`／`fa7e019e9` |
+| 20:52 | HS、ZS | **導航：可改用自己的 Mapbox token。** route 16 的 log 顯示 comma 的路線 API 在沒有 comma prime 時回 403，所以一直「Waiting for route」。裝置上有 `/data/mapbox_token` 時，navd 改直接跟 Mapbox 要路線（token 只放裝置上，不進 repo）。地圖底圖還是跟 comma 要，可能一樣被擋。11/15 實車（route 19、1a）：路線正常，轉彎提示有中文路名，抵達前會提示（提示句是英文）；地圖底圖確定被擋（`mapsd.render_failed`：拿不到 comma 的圖磚），導航畫面沒有地圖，不影響開車 | ✅ HS（路線） | op `461b28979`／`fa7e019e9` |
 | 17:33 | HS、ZS | **修正：踩煞車被當成撥桿取消。** openpilot 常比原廠 ACC 早 0.1–0.2 秒偵測到煞車，會先解除並送出 Cancel，讓 ACC 走撥桿取消的路徑（作用中→Brake Only→待命）。改成踩煞車期間和放開後 1 秒內不送 Cancel，讓 ACC 自己回到待命。11/14 log 重播：5 次煞車原本都送 Cancel，現在都不送。11/15 實車（route 18）：5 次踩煞車解除，ACC 都直接回到待命，沒送 Cancel | ✅ HS | od `13eee668`／`8266c65f`<br>op `09cec5647`／`7e1d542ce` |
 | 17:29 | HS、ZS | **儀表 LKA 燈號。** openpilot 送出的轉向訊息原本固定送「LKA 關閉」，儀表燈號不亮。改成 openpilot 控制方向盤時送「作用中」，其他時候照抄原廠相機的值（HS 平常是「待命」）。11/15 實車（route 18）：送「作用中」時 EPS 照常接受扭力，儀表燈號正常亮起、狀態正確（車主確認） | ✅ HS | od `0b5f84a3`／`098e8644`<br>op `d747f3085`／`bb09fe51a` |
 | 12:13 | ZS | **修正：Unknown Vehicle Variant。** AEB 判斷不再讀 0x251（`SCS_HSC2_FrP24`）。ZS 沒有這個訊息，讀了會讓 CAN 永遠無效。朋友的 rlog 證實只缺這個訊息 | 🔶 | od `5c725512`<br>op `8598fbbb5` |
@@ -22,7 +22,7 @@
 | 03:36 | HS、ZS | 解析原廠 AEB／FCW 警示：FCW 任一級警示，AEB 作動時通知 openpilot | 🔶 | od `499611bb`<br>op `84ecd18eb`、`a86760550` |
 | 03:11 | HS | 加入 HS／ZS 差異表 `MG_HS_ZS_DIFF.md` | — | op `ff722acd8` |
 | 03:06 | ZS | **新增 MG ZS 2025 車型**（`MG_ZS`），沿用 HS 的 ADAS 邏輯和朋友 `mg-zs` 分支的參數；先強制 `FINGERPRINT="MG_ZS"` | ✅ | od `4fb4f6a4`<br>op `c49751c81` |
-| 02:56 | HS、ZS | 解析巡航按鍵事件（SET、RES、加減速、Cancel、車距）；主開關改看 ACC 狀態 | ✅ HS（車距鍵 11/15 route 18 確認：原廠車距 3→2→1） | od `b83cff68`<br>op `62af5bbb3` |
+| 02:56 | HS、ZS | 解析巡航按鍵事件（SET、RES、加減速、Cancel、車距）；主開關改看 ACC 狀態 | ✅ HS（車距鍵 11/15 route 18 確認：原廠車距 3→2→1；長按加速 11/15 route 19 確認：每 0.2 秒 +1 km/h，30→35；長按減速未測） | od `b83cff68`<br>op `62af5bbb3` |
 
 ## 2026-11-14
 
