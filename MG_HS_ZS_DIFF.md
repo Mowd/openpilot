@@ -3,7 +3,7 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-15（HS 實車 route 18 驗證：踩煞車不送 Cancel、自動停車起步、EPS 接受 LKA 狀態 2；踩煞車不再送 Cancel；儀表 LKA 燈號：openpilot 控制時送作用中，其他時候照抄原廠相機；ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
+最後更新：2026-11-15（HS 實車 route 18 驗證：踩煞車不送 Cancel、自動停車起步、EPS 接受 LKA 狀態 2、儀表 LKA 燈號正常、車距鍵；踩煞車不再送 Cancel；儀表 LKA 燈號：openpilot 控制時送作用中，其他時候照抄原廠相機；ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
 
 ## 分支
 
@@ -46,8 +46,8 @@
 | 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | FCW 同 HS；AEB 只看雷達：ZS 沒有 `SCS_HSC2_FrP24`（0x251），讀了會讓 CAN 永遠無效（Unknown Vehicle Variant）。朋友 rlog（`bf23cd5`）的 CANParser 警告證實只缺 0x251，`8598fbb` 已修正，待實車確認 |
 | 停車起步（短按 RES） | 有，實車驗證（11/15 route 18 兩次：雷達起步提示 `ACCGoNotfr` 後立刻送 RES，約 1 秒起步） | 有，未驗證 |
 | 取消原廠巡航 | 有。實體 Cancel 已實車驗證。踩煞車時原廠 ACC 會自己回到待命（2→1），但常比 openpilot 偵測到煞車晚約 0.1–0.2 秒，原本 openpilot 會趁這段時間送 Cancel，變成撥桿取消（2→4 Brake Only→1）。現在踩煞車期間和放開後 1 秒內不送 Cancel（重播 11/14 log：5 次煞車原本都送，現在都不送；11/15 route 18 實車 5 次踩煞車都直接 2→1，沒送 Cancel） | 有，未驗證 |
-| 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵待確認 | 0x1E1 設為選用（沒收到時沒有按鍵事件，也不會自動起步或送 Cancel）。朋友 rlog 證實 ZS 的 bus 0 有 0x1E1（約 40 Hz），按鍵功能應該可用，待實車驗證 |
-| 儀表 LKA 燈號 | openpilot 控制方向盤時送 2（作用中），其他時候照抄原廠相機（HS 平常是 1 待命）。原本固定送 0（關閉），燈號不亮。重播 11/15 rlog 確認輸出正確；route 18 實車確認 EPS 在狀態 2 照常接受扭力（CtrlSts 1），儀表燈號待確認 | 同 HS。朋友停車的 log 相機送 0，照抄後一樣是 0；行駛中的值待確認 |
+| 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵實車驗證（route 18：原廠車距等級跟著變） | 0x1E1 設為選用（沒收到時沒有按鍵事件，也不會自動起步或送 Cancel）。朋友 rlog 證實 ZS 的 bus 0 有 0x1E1（約 40 Hz），按鍵功能應該可用，待實車驗證 |
+| 儀表 LKA 燈號 | openpilot 控制方向盤時送 2（作用中），其他時候照抄原廠相機（HS 平常是 1 待命）。原本固定送 0（關閉），燈號不亮。重播 11/15 rlog 確認輸出正確；route 18 實車確認 EPS 在狀態 2 照常接受扭力（CtrlSts 1），儀表燈號正常亮起（車主確認） | 同 HS。朋友停車的 log 相機送 0，照抄後一樣是 0；行駛中的值待確認 |
 | 煞車門檻 | 大於 1 格（75 kPa），與 safety 一致 | 同 HS（mg-zs 原本大於 0） |
 | 車門 | 四個車門的原廠訊號（實車驗證） | 同 HS（mg-zs 原本讀 bit 47 的 `DrvrDoorOpenSts_H1_Safety` 和副駕，HS 上 bit 47 不會變，待朋友驗證） |
 | 檔位、油門、安全帶、盲點 | 共用 | 共用 |
