@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from openpilot.selfdrive.controls.lib.curve_speed import A_DECEL, A_LAT_MAX, CurveSpeed, curve_speed
+from openpilot.selfdrive.controls.lib.curve_speed import A_DECEL, A_LAT_MAX, ACC_DELAY, CurveSpeed, curve_speed
 
 T = np.linspace(0, 10, 33)
 
@@ -30,9 +30,21 @@ class TestCurveSpeed:
     v = 20.0
     yaw = np.where(T >= 5.0, v / 100.0, 0.0)  # straight for 5 s, then the curve
     dist = v * T[np.argmax(T >= 5.0)]
-    expected = math.sqrt(A_LAT_MAX * 100.0 + 2 * A_DECEL * dist)
+    # the ACC keeps going at v for ACC_DELAY before it brakes
+    expected = math.sqrt(A_LAT_MAX * 100.0 + 2 * A_DECEL * (dist - v * ACC_DELAY))
     assert math.isclose(curve_speed(model(v, yaw)), expected, rel_tol=1e-3)
     assert curve_speed(model(v, yaw)) > curve_speed(model(v, v / 100.0))
+
+  def test_acc_delay_slows_down_earlier(self):
+    v = 20.0
+    yaw = np.where(T >= 5.0, v / 100.0, 0.0)
+    assert curve_speed(model(v, yaw)) < curve_speed(model(v, yaw), acc_delay=0.0)
+
+  def test_curve_within_the_delay(self):
+    # the curve starts before the ACC would even react: the curve speed itself
+    v = 20.0
+    yaw = np.where(T >= 1.0, v / 100.0, 0.0)
+    assert math.isclose(curve_speed(model(v, yaw)), math.sqrt(A_LAT_MAX * 100.0), rel_tol=1e-3)
 
   def test_bad_model(self):
     empty = SimpleNamespace(position=SimpleNamespace(t=[], x=[]), velocity=SimpleNamespace(x=[]),
