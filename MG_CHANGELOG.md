@@ -11,6 +11,7 @@
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
 |---|---|---|---|---|
+| 01:35 | HS、ZS | **前車減速時提前降速（fork 專屬，預設關閉）。** 原廠 ACC 常等到很接近較慢的前車才急煞（雷達有鎖定也一樣），log 裡 3 次駕駛自己踩煞車的情況，openpilot 模型都早 2～4 秒就想減速。有前車、模型想要的減速超過 0.5 m/s² 時，目標速度 = 車速 + 想要的加速度 × 4 秒，和彎道目標取較低者，用短按 − 調低原廠 ACC 設定速度（最低 30）；模型不再想減速 1.5 秒後就恢復。設定 → driving 的「slow down early for slower cars」開關。舊 log 重播：HS route 18 提早 1.6 秒、ZS route 06 提早 3.4 秒開始調低，6 條路線約 1.5 小時共觸發 8 段，都是前車在減速 | 🔶 | op `c79e1a15b`／`e870ab93a` |
 | 01:12 | ZS | **修正：ZS 駕駛座門讀不到。** ZS 的駕駛座門在 47\|2（原 hs 分支的 `DrvrDoorOpenSts_H1_Safety`，這份 DBC 裡叫 `BntOpenStsHSC2`），`DrvrDoorOpenStsHSC2` 不會變；左後、右後門共用 `RLDoorOpenStsHSC2`（朋友確認）。用 route 06 重播：四個門都抓得到，整趟沒有誤判 | 🔶 | od `95c3eb21`<br>op `b0a551e88` |
 | 00:48 | HS、ZS | **彎道自動降速（fork 專屬，預設關閉）。** openpilot 依模型預測路徑算出彎道安全速度（側向加速度 2.0 m/s²，預留原廠 ACC 1.0 m/s² 的減速距離），MG 車控用短按 −／+（每下 5 km/h，最低 30）調低原廠 ACC 設定速度，過彎後回到駕駛原本的速度。只在 ACC 作用中、車速比目標快時才調；駕駛自己按鍵後 2 秒內不動作，這個彎也不再調；ACC 反應不如預期（一下跳兩格或沒反應）就整趟停用。panda safety 改為啟用中允許單獨的 −／+。設定 → driving 的「slow down for curves」開關。舊 log 重播（HS route 10、0e、12、13、18，ZS route 05、06）：市區路段沒有誤觸發 | 🔶 | od `7f727772`／`a9f9822c`<br>op `c56715c72`／`dd877c90b` |
 | 00:14 | ZS | 改用韌體自動辨識車型，拿掉強制 `FINGERPRINT="MG_ZS"`。朋友 11/15 三次發動（route 05–07）：EPS、相機、雷達都在 bus 0 回應，韌體版本精確比對到 MG_ZS | 🔶 | op `00186a6e8` |
