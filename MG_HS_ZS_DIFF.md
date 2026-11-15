@@ -3,7 +3,7 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-16（ZS 朋友實車 route 05–07（`8598fbbb5`）：三次發動韌體都精確比對到 MG_ZS、沒有 Car Unrecognized；停車起步 6 次、按鍵、Cancel、完全關閉 ACC、行駛中解開安全帶都正常；沒有 AEB／FCW 誤報或轉向故障；開機後約 3 秒前鏡頭 LDW 故障位元會亮（轉向暫時不可用，無聲），HS 沒有；車門各門訊號、FCW 靈敏度、AEB 開關待 route 06 前段 rlog；HS 實車 route 19、1a：Mapbox 導航路線正常、長按加速每次 +1 km/h；route 18 驗證：踩煞車不送 Cancel、自動停車起步、EPS 接受 LKA 狀態 2、儀表 LKA 燈號正常、車距鍵、扭力參數手感良好；踩煞車不再送 Cancel；儀表 LKA 燈號：openpilot 控制時送作用中，其他時候照抄原廠相機；ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
+最後更新：2026-11-16（ZS 朋友實車 route 05–07（`8598fbbb5`）：三次發動韌體都精確比對到 MG_ZS、沒有 Car Unrecognized；停車起步 6 次、按鍵、Cancel、完全關閉 ACC、行駛中解開安全帶都正常；沒有 AEB／FCW 誤報或轉向故障；開機後約 3 秒前鏡頭 LDW 故障位元會亮（轉向暫時不可用，無聲），HS 沒有；route 06 rlog：FCW 靈敏度、AEB 開關、ACC 主開關都讀得到；ZS 駕駛座門在 47|2，現在的程式讀不到；HS 實車 route 19、1a：Mapbox 導航路線正常、長按加速每次 +1 km/h；route 18 驗證：踩煞車不送 Cancel、自動停車起步、EPS 接受 LKA 狀態 2、儀表 LKA 燈號正常、車距鍵、扭力參數手感良好；踩煞車不再送 Cancel；儀表 LKA 燈號：openpilot 控制時送作用中，其他時候照抄原廠相機；ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
 
 ## 分支
 
@@ -50,7 +50,7 @@
 | 彎道自動降速（fork 專屬） | 有，預設關閉，待實車驗證。短按 −／+ 調原廠 ACC 設定速度（每下 5 km/h，最低 30），過彎後恢復 | 同 HS（共用程式），待實車驗證 |
 | 儀表 LKA 燈號 | openpilot 控制方向盤時送 2（作用中），其他時候照抄原廠相機（HS 平常是 1 待命）。原本固定送 0（關閉），燈號不亮。重播 11/15 rlog 確認輸出正確；route 18 實車確認 EPS 在狀態 2 照常接受扭力（CtrlSts 1），儀表燈號正常亮起（車主確認） | 同 HS。朋友停車的 log 相機送 0，照抄後一樣是 0；行駛中的值待確認 |
 | 煞車門檻 | 大於 1 格（75 kPa），與 safety 一致 | 同 HS（mg-zs 原本大於 0） |
-| 車門 | 四個車門的原廠訊號（實車驗證） | 同 HS（mg-zs 原本讀 bit 47 的 `DrvrDoorOpenSts_H1_Safety` 和副駕，HS 上 bit 47 不會變；route 06 停車時 openpilot 偵測到 3 次開門，是哪幾個門要等那兩段的 rlog） |
+| 車門 | 四個車門的原廠訊號（實車驗證） | **駕駛座門讀不到，待修。** route 06 rlog（停車依序開關）：38 秒 47|2 變 1（原 hs 分支的 `DrvrDoorOpenSts_H1_Safety`，DBC 裡和引擎蓋 `BntOpenStsHSC2` 同位置；HS 開駕駛座門時這裡不會變，ZS 剛好相反，`DrvrDoorOpenStsHSC2` 不會變）；51 秒副駕；66 秒、75 秒都是左後（右後門的訊號沒出現過，待朋友確認第二次開的是哪個門） |
 | 檔位、油門、安全帶、盲點 | 共用 | 共用 |
 
 ## 同步規則
