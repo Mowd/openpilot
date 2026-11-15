@@ -50,7 +50,7 @@
 | 彎道自動降速（fork 專屬） | 有，預設關閉，待實車驗證。短按 −／+ 調原廠 ACC 設定速度（每下 5 km/h，最低 30），過彎後恢復 | 同 HS（共用程式），待實車驗證 |
 | 儀表 LKA 燈號 | openpilot 控制方向盤時送 2（作用中），其他時候照抄原廠相機（HS 平常是 1 待命）。原本固定送 0（關閉），燈號不亮。重播 11/15 rlog 確認輸出正確；route 18 實車確認 EPS 在狀態 2 照常接受扭力（CtrlSts 1），儀表燈號正常亮起（車主確認） | 同 HS。朋友停車的 log 相機送 0，照抄後一樣是 0；行駛中的值待確認 |
 | 煞車門檻 | 大於 1 格（75 kPa），與 safety 一致 | 同 HS（mg-zs 原本大於 0） |
-| 車門 | 四個車門的原廠訊號（實車驗證） | 駕駛座門讀 47|2（DBC 裡是 `BntOpenStsHSC2`，原 hs 分支叫 `DrvrDoorOpenSts_H1_Safety`；ZS 的 `DrvrDoorOpenStsHSC2` 不會變），副駕同 HS，左後、右後門共用 `RLDoorOpenStsHSC2`（朋友確認）。route 06 重播四個門都抓得到、整趟沒有誤判，待實車確認 |
+| 車門 | 四個車門的原廠訊號（實車驗證） | 駕駛座門讀 47\|2（DBC 裡是 `BntOpenStsHSC2`，原 hs 分支叫 `DrvrDoorOpenSts_H1_Safety`；ZS 的 `DrvrDoorOpenStsHSC2` 不會變），副駕同 HS，左後、右後門共用 `RLDoorOpenStsHSC2`（朋友確認）。route 06 重播四個門都抓得到、整趟沒有誤判，待實車確認 |
 | 檔位、油門、安全帶、盲點 | 共用 | 共用 |
 
 ## 同步規則
