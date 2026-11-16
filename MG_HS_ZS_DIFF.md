@@ -9,7 +9,7 @@
 
 | 項目 | MG HS PHEV | MG ZS |
 |---|---|---|
-| openpilot 分支 | `Mowd/openpilot` `hs-phev` | `Mowd/openpilot` `zs` |
+| openpilot 分支 | `Mowd/openpilot` `hs-phev`；`hs` 和 `hs-phev` 指向同一個 commit（給 HS 1.5 油車裝，名字比較直觀；pctine 的舊 hs 程式備份在 `hs-pctine-old`） | `Mowd/openpilot` `zs` |
 | opendbc 分支 | `Mowd/opendbc` `hs-phev` | `Mowd/opendbc` `zs`（從 `hs-phev` 開出，加上 MG_ZS commit，之後用 merge 同步 hs-phev） |
 | openpilot 基底 | commaai master 2026-11-14（cec317f，merge） | commaai master 2026-11-14（cec317f，merge） |
 | 參數來源 | 原 `hs` 分支 + 實車 log | 朋友的 `mg-zs` 分支 |
@@ -66,4 +66,4 @@
    **新讀任何 CAN 訊息都要注意**：CarState 讀到的訊息都會變成必要訊息，ZS 沒有就整個 CAN 無效。ZS 只能讀 mg-zs 用過的訊息（清單在 opendbc `zs` 的 `opendbc/car/mg/tests/test_mg.py`），其他的要用 `CAR.MG_HS` 限定或設為選用。
 3. opendbc：在 `zs` 上 `git merge hs-phev`（用 merge 不用 rebase，避免 force push 讓朋友裝置上的舊版本指到不存在的 commit），解決衝突後跑 `./test.sh`。
 4. openpilot：`zs` 的 opendbc 子模組指到新的 opendbc `zs` commit。
-5. 更新這張表，兩邊都 push。
+5. 更新這張表，兩邊都 push。push openpilot `hs-phev` 時，同時把 `hs` 更新成同一個 commit（`git push origin hs-phev hs-phev:hs`）。
