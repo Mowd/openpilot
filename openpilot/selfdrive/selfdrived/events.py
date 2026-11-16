@@ -505,6 +505,15 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.HIGHEST, VisualAlert.fcw, AudibleAlert.warningSoft, 2.),
   },
 
+  # fork (MG HS): stock_radar_warning.py
+  EventName.stockRadarMissedLead: {
+    ET.PERMANENT: Alert(
+      "BRAKE!",
+      "Stock Radar Missed the Car Ahead",
+      AlertStatus.critical, AlertSize.full,
+      Priority.HIGHEST, VisualAlert.fcw, AudibleAlert.warningImmediateSystem, .1),
+  },
+
   EventName.ldw: {
     ET.PERMANENT: Alert(
       "Lane Departure Detected",
