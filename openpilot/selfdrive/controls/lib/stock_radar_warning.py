@@ -5,8 +5,11 @@ On these cars the stock radar ACC controls the speed. Now and then its radar doe
 sees (HS route 23: a car slowing to ~10 km/h, from 63 m down to 33 m at 39 km/h, the radar's lead flag stayed 0 and
 the ACC asked for no braking until the driver braked). Lowering the set speed (lead_speed.py) can't go under 30 km/h
 and can't stop the car, so this tells the driver to brake: the car port reports whether the radar tracks a lead
-(CarState.stockRadarLead) and how much the ACC asks to brake (CarState.stockAccelRequest).
+(CarState.stockRadarLead) and how much the ACC asks to brake (CarState.stockAccelRequest). The MG ZS doesn't
+report the ACC's request (NaN), so there the car's measured acceleration stands in for it.
 """
+import math
+
 from openpilot.common.realtime import DT_CTRL
 
 TTC_MAX = 5.0  # s, closing in on the lead within this time at the current speeds
@@ -40,8 +43,8 @@ class StockRadarWarning:
       self.hold_frames = 0
       return False
 
-    missed = (lead.present and not CS.stockRadarLead and
-              needs_braking(CS.vEgo, lead.dRel, lead.vLead, CS.stockAccelRequest))
+    accel = CS.stockAccelRequest if math.isfinite(CS.stockAccelRequest) else CS.aEgo
+    missed = (lead.present and not CS.stockRadarLead and needs_braking(CS.vEgo, lead.dRel, lead.vLead, accel))
     if missed:
       self.start_frames += 1
       if self.start_frames * DT_CTRL >= T_START:
