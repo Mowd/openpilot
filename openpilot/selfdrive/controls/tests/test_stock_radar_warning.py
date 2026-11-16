@@ -4,9 +4,9 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.stock_radar_warning import T_HOLD, T_START, StockRadarWarning, needs_braking
 
 
-def car_state(v=10.8, radar_lead=False, accel_request=0.0, cruise=True, brake=False, valid=True):
+def car_state(v=10.8, radar_lead=False, accel_request=0.0, cruise=True, brake=False, valid=True, a_ego=0.0):
   return SimpleNamespace(stockRadarValid=valid, stockRadarLead=radar_lead, stockAccelRequest=accel_request, vEgo=v,
-                         brakePressed=brake, cruiseState=SimpleNamespace(enabled=cruise))
+                         aEgo=a_ego, brakePressed=brake, cruiseState=SimpleNamespace(enabled=cruise))
 
 
 def lead(d=38.0, v=2.8, present=True):
@@ -31,6 +31,12 @@ class TestStockRadarWarning:
   def test_not_when_the_acc_brakes_enough(self):
     assert not run(StockRadarWarning(), car_state(accel_request=-2.0), lead())
 
+  def test_measured_accel_without_a_request(self):
+    # MG ZS: no ACC request (NaN), the car's own deceleration counts instead
+    nan = float('nan')
+    assert run(StockRadarWarning(), car_state(accel_request=nan, a_ego=-0.1), lead())
+    assert not run(StockRadarWarning(), car_state(accel_request=nan, a_ego=-2.0), lead())
+
   def test_not_far_away_or_not_closing(self):
     assert not needs_braking(10.8, 80.0, 2.8, 0.0)  # 10 s away
     assert not needs_braking(10.8, 20.0, 10.5, 0.0)  # following at the same speed
@@ -39,7 +45,7 @@ class TestStockRadarWarning:
   def test_not_without_a_lead_or_cruise(self):
     assert not run(StockRadarWarning(), car_state(), lead(present=False))
     assert not run(StockRadarWarning(), car_state(cruise=False), lead())
-    assert not run(StockRadarWarning(), car_state(valid=False), lead())  # other cars, MG ZS
+    assert not run(StockRadarWarning(), car_state(valid=False), lead())  # other cars
 
   def test_stops_when_the_driver_brakes(self):
     w = StockRadarWarning()
