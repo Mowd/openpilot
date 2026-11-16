@@ -60,13 +60,14 @@ class DesireHelper:
         self.lane_change_timer += DT_MDL
 
         if lane_change_prob < 0.02 and self.lane_change_timer >= LANE_CHANGE_START_TIME:
+          # fork (MG HS): one lane change per blinker. Upstream goes back to preLaneChange while the blinker is still
+          # on, so a nudge starts another lane change. On the HS the driver's hands on the wheel alone give 1-2 Nm,
+          # above the 1 Nm steeringPressed threshold, so that "nudge" happened by itself before the stalk was
+          # released (route 2b, twice): the car kept pushing towards the next lane with the blinker already off.
+          # Going to off needs the blinker off and on again (prev_one_blinker) for the next lane change
           self.lane_change_timer = 0.0
-          if one_blinker:
-            self.lane_change_state = LaneChangeState.preLaneChange
-            self.lane_change_direction = self.get_lane_change_direction(carstate)
-          else:
-            self.lane_change_state = LaneChangeState.off
-            self.lane_change_direction = LaneChangeDirection.none
+          self.lane_change_state = LaneChangeState.off
+          self.lane_change_direction = LaneChangeDirection.none
 
     self.prev_one_blinker = one_blinker and lateral_active
 
