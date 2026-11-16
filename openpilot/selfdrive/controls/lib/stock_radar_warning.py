@@ -30,6 +30,7 @@ T_HOLD = 1.0  # s to keep warning after it ends, so it doesn't flicker
 LOST_GAP = 5.0  # s, the lead is within this time gap (route 26's motorcycle: 22-35 m at 29 km/h, so 4 s flickered)
 LOST_ACCEL = 0.3  # m/s^2, the ACC accelerates at least this much
 LOST_PULLING_AWAY = 2.0  # m/s, not when the lead drives away faster than this
+LOST_MAX_DIST = 40.0  # m: farther leads are often dropped by the radar for a moment while keeping their speed
 LOST_T_START = 0.5  # s
 
 
@@ -44,7 +45,7 @@ def needs_braking(v_ego: float, d_rel: float, v_lead: float, accel_request: floa
 
 
 def accelerating_towards(v_ego: float, d_rel: float, v_lead: float, accel: float) -> bool:
-  return (v_ego > MIN_SPEED and d_rel < LOST_GAP * v_ego and v_lead < v_ego + LOST_PULLING_AWAY and
+  return (v_ego > MIN_SPEED and d_rel < min(LOST_GAP * v_ego, LOST_MAX_DIST) and v_lead < v_ego + LOST_PULLING_AWAY and
           accel > LOST_ACCEL)
 
 
