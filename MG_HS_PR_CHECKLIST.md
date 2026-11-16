@@ -17,7 +17,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 ## 1. 車輛與環境
 
 - [ ] 在 `values.py` 寫清楚廠牌、車型、年份、等級、市場（台灣）、需要的 ADAS 配備（目前只寫「MG HS PHEV 2023」）
-- [x] 看過的 ECU 韌體版本都加進 `fingerprints.py`（EPS、攝影機、雷達各兩組）
+- [x] 看過的 ECU 韌體版本都加進 `fingerprints.py`（EPS、攝影機、雷達各兩組：PHEV 和 1.5 油車）。油車那組原本是從 pctine 的 hs 分支抄來的，EPS 和攝影機版本放反了，11/16 用油車 rlog 確認後修正
 - [x] 跟 MG 5 EV 不同的訊號都在實車上驗證過，例如油門、煞車、檔位、車門
 - [ ] 確認 harness 接腳與款式：文件寫 `vw_a`，實際用的是 xnor harness。不相容的話，要在 PR 裡註明是新的 harness 款式
 - [x] CAN bus 分配：bus 0 是車輛／ADAS（雷達、ABS、閘道器、EPS），bus 1 是只能聽的私有 CAN（FCW 0x382、約 15 Hz 的物件清單 0x340～0x3FF），bus 2 是攝影機
@@ -30,7 +30,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 多次冷啟動都能正確辨識，不靠強制 `FINGERPRINT` 或快取（2026-11-15 熄火重開兩次，`fingerprintSource` 都是 `fw`，三個 ECU 都在 bus 0 回應）
 - [x] 韌體查詢用正確的 ECU 位址與 bus（HS 用 bus 0，MG 5 EV 保留 bus 1）
 - [ ] 韌體查詢不會讓儀表板出現故障碼（待實車驗證）
-- [ ] 精確與模糊辨識都能區分需要不同控制的車款，例如 MG HS 汽油版、沒有 ACC 的等級
+- [ ] 精確與模糊辨識都能區分需要不同控制的車款，例如 MG HS 汽油版、沒有 ACC 的等級。11/16：1.5 油車用同一個 `MG_HS`，靠 CAN 上有沒有 PHEV 的 HCU 訊息 0xAF 區分（油車 rlog 重播：韌體精確辨識、CAN 全程有效、safety 沒有收訊錯誤）；油車還沒實車啟用過，`values.py` 的車款文件也還沒加油車
 - [ ] 不認識的韌體不會被誤判成不相容的車款。必要時用 CAN 訊號判斷，並設為 `dashcamOnly`
 - [x] 軸距、轉向比要有可靠的資料來源：軸距 2720 mm（台灣、英國規格表一致）；原廠沒公布轉向比，改用實車資料定為 16.8（paramsd 30 段學到 16.6～17.0，低速偏航率推算 16.8，左右打死各約 480 度）
 - [ ] `minSteerSpeed`、`minEnableSpeed`、`autoResumeSng`、`steerAtStandstill` 符合實際行為（目前是預設的 0 / 0 / True / False）

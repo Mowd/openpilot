@@ -20,7 +20,7 @@
 
 | 項目 | MG HS PHEV | MG ZS |
 |---|---|---|
-| 車型代號 | `MG_HS`（MG HS PHEV 2023） | `MG_ZS`（MG ZS 2025） |
+| 車型代號 | `MG_HS`（MG HS PHEV 2023；1.5 油車也是 `MG_HS`，CAN 上沒有 0xAF 就當油車） | `MG_ZS`（MG ZS 2025） |
 | 軸距 | 2.72 m（規格表） | 2.58 m（mg-zs） |
 | 轉向比 | 16.8（實車 log 學習值） | 15.8（mg-zs，從 MG 5 EV 沿用，未驗證） |
 | 扭力參數 `override.toml` | `[0.9, 2.5, 0.19]`（openpilot 實車學習值，約 4260 個高速資料點；route 18 實車手感良好，時速 30 急彎都過得去） | `[1.2, 2.5, 0.18]`（mg-zs，可用朋友的 log 算學習值） |
@@ -32,9 +32,9 @@
 
 | ECU | MG HS PHEV | MG ZS |
 |---|---|---|
-| EPS | 0x721：`\x10D\x860\x01`、`\x10\x92\x33\x87\x01` | 0x721：`\x11\x06c\x94\x01` |
-| 攝影機 | 0x733：`\x10cT\x97\x01`、`\x10\x79\x07\x92\x01` | 0x733：`\x10\x89wQ\x01` |
-| 雷達 | **0x734**：`\x10cT\x99\x01`、`\x10\x92\x33\x80\x01` | **0x732**：`\x11RuP\x01` |
+| EPS | 0x721：`\x10D\x860\x01`（PHEV）、`\x10\x79\x07\x92\x01`（1.5 油車） | 0x721：`\x11\x06c\x94\x01` |
+| 攝影機 | 0x733：`\x10cT\x97\x01`（PHEV）、`\x10\x92\x33\x87\x01`（1.5 油車） | 0x733：`\x10\x89wQ\x01` |
+| 雷達 | **0x734**：`\x10cT\x99\x01`（PHEV）、`\x10\x92\x33\x80\x01`（1.5 油車） | **0x732**：`\x11RuP\x01` |
 | 回應的 bus | bus 0、2（已驗證） | bus 0（朋友 4 次發動都一樣） |
 
 ## 車輛狀態與功能
@@ -55,7 +55,7 @@
 | 變換車道（fork 專屬） | 撥一次方向燈只變換一個車道；要往變換方向施力超過 2 Nm 才開始（`steeringPressed` 維持 1 Nm）。HS 手扶方向盤就有 1～2 Nm（route 2b：超過 1 Nm 佔 31%、超過 2 Nm 佔 2%），原本方向燈一撥就開始，變換完方向燈還撥著時也會自己觸發第二次 | 同 HS（共用程式），ZS 的施力情況未確認 |
 | 車型辨識失敗重試（fork 專屬） | 有（HS 沒遇過辨識失敗） | 有。ZS 偶爾 Car Unrecognized，推測是發動引擎時 ECU 漏回應；認不出時等 2 秒再查，最多重試 2 次 |
 | 儀表 LKA 燈號 | openpilot 控制方向盤時送 2（作用中），其他時候照抄原廠相機（HS 平常是 1 待命）。原本固定送 0（關閉），燈號不亮。重播 11/15 rlog 確認輸出正確；route 18 實車確認 EPS 在狀態 2 照常接受扭力（CtrlSts 1），儀表燈號正常亮起（車主確認） | 同 HS。朋友停車的 log 相機送 0，照抄後一樣是 0；行駛中的值待確認 |
-| 煞車門檻 | 壓力大於 1 格（75 kPa）或煞車開關（0xAF `EPTBrkPdlDscrtInptStsHSC2`，輕碰就會讓原廠 ACC 取消），與 safety 一致 | 只用壓力大於 1 格（ZS 沒有 0xAF；mg-zs 原本大於 0） |
+| 煞車門檻 | 壓力大於 1 格（75 kPa）或煞車開關（0xAF `EPTBrkPdlDscrtInptStsHSC2`，輕碰就會讓原廠 ACC 取消），與 safety 一致。0xAF 是 PHEV 的 HCU 才有，1.5 油車只用壓力（開機時看 CAN 上有沒有 0xAF，設 `MgFlags.PHEV`／safety `PHEV`） | 只用壓力大於 1 格（ZS 沒有 0xAF；mg-zs 原本大於 0） |
 | 車門 | 四個車門的原廠訊號（實車驗證） | 駕駛座門讀 47\|2（DBC 裡是 `BntOpenStsHSC2`，原 hs 分支叫 `DrvrDoorOpenSts_H1_Safety`；ZS 的 `DrvrDoorOpenStsHSC2` 不會變），副駕同 HS，左後、右後門共用 `RLDoorOpenStsHSC2`（朋友確認）。route 06 重播四個門都抓得到、整趟沒有誤判，待實車確認 |
 | 檔位、油門、安全帶、盲點 | 共用 | 共用 |
 
