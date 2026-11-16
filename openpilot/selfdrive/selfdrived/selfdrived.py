@@ -17,6 +17,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.common.gps import get_gps_location_service
 
 from openpilot.selfdrive.car.car_events import CarEvents
+from openpilot.selfdrive.controls.lib.stock_radar_warning import StockRadarWarning
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 from openpilot.selfdrive.selfdrived.events import Events, ET
 from openpilot.selfdrive.selfdrived.helpers import ExcessiveActuationCheck
@@ -112,6 +113,7 @@ class SelfdriveD:
     self.CS_prev = car.CarState.new_message()
     self.AM = AlertManager()
     self.events = Events()
+    self.stock_radar_warning = StockRadarWarning()
 
     self.initialized = False
     self.enabled = False
@@ -448,6 +450,10 @@ class SelfdriveD:
     planner_fcw = self.sm['longitudinalPlan'].fcw and self.enabled
     if (planner_fcw or model_fcw) and not self.CP.notCar:
       self.events.add(EventName.fcw)
+
+    # fork (MG HS): the stock radar ACC misses a lead the camera sees closing in and isn't braking for it
+    if self.stock_radar_warning.update(CS, self.sm['radarState'].leadOne):
+      self.events.add(EventName.stockRadarMissedLead)
 
     # GPS checks
     gps_ok = self.sm.recv_frame[self.gps_location_service] > 0 and (self.sm.frame - self.sm.recv_frame[self.gps_location_service]) * DT_CTRL < 2.0
