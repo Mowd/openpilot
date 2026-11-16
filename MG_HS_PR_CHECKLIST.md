@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-16（counter／checksum 實車驗證）
+最後更新：2026-11-16（原廠雷達漏看前車警示）
 
 ---
 
@@ -145,7 +145,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [ ] 檢查每幀複製按鍵訊息（`copy.copy`）的寫法是否合適
 - [ ] PR 說明照模板附上 Dongle ID 和 route，還有：車型年份、harness、扭力上限 300 的實測證據、safety 測試結果
 - [ ] 車型文件註明支援程度，例如轉向扭力偏弱、有沒有 stop & go
-- [ ] 拿掉 fork 專屬功能，不放進 PR：彎道自動降速（opendbc `speed_buttons.py`、`car.capnp` 的 `speedTarget`、safety 允許 −／+ 和對應測試；openpilot 的 `curve_speed.py`、`lead_speed.py`、controlsd、兩個設定開關）
+- [ ] 拿掉 fork 專屬功能，不放進 PR：彎道自動降速（opendbc `speed_buttons.py`、`car.capnp` 的 `speedTarget`、safety 允許 −／+ 和對應測試；openpilot 的 `curve_speed.py`、`lead_speed.py`、controlsd、兩個設定開關）；原廠雷達漏看前車警示（`car.capnp` 的 `stockRadar*`、carstate 讀 0x242／0x246 的部分；openpilot 的 `stock_radar_warning.py`、`stockRadarMissedLead` 事件）
 
 ---
 

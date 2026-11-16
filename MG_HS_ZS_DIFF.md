@@ -50,6 +50,7 @@
 | counter／checksum 檢查 | 車速 0x23C、雷達 0x242、EPS 0x1EC、方向盤角度 0x1E5、ABS 0x251 的 checksum 和 counter；油門 0xC9 只檢查 checksum；煞車壓力 0x214 只檢查 counter（5 條路線重播沒有誤判；11/16 route 23 實車整趟沒有 CAN 錯誤） | 自己的 DBC `mg_zs_generated` 和 safety 旗標 `ZS`：只檢查車速、EPS 的 checksum，和車速、EPS、煞車壓力、方向盤角度、按鍵、攝影機的 counter。ZS 的雷達 0x242、油門 0xC9 沒有對應的 counter／checksum，方向盤角度 checksum 也不同（3 條路線重播沒有誤判） |
 | 彎道自動降速（fork 專屬） | 有，預設關閉，11/16 route 23 實車有觸發、正常恢復（ZS route 08 實測：上坡後的急彎太晚減速，已加入 ACC 延遲 1.5 秒；ACC 偶爾會忽略按鍵，改成暫停 10 秒再試；模型 80 m 外的彎道看不準，高速匝道仍可能來不及；連續彎道會在 5 km/h 檔位間來回按，已加遲滯）。短按 −／+ 調原廠 ACC 設定速度（每下 5 km/h，最低 30），過彎後恢復 | 同 HS（共用程式），待實車驗證 |
 | 前車減速提前降速（fork 專屬） | 有，預設關閉，11/16 route 23 實車正常（前車減速時設定速度降到 30，平順減速不用踩煞車）。模型想為前車減速時短按 − 提早調低原廠 ACC 設定速度（最低 30），不再需要時恢復 | 同 HS（共用程式），待實車驗證 |
+| 原廠雷達漏看前車警示（fork 專屬） | 有，預設開啟。鏡頭看到正在接近的前車、原廠雷達沒鎖定（0x246 `ACCObjDet_RadarHSC2`）且 ACC 煞車不夠（0x242 `ACCAccReqValHSC2`）時，顯示「BRAKE!」並發出警示音（route 23 重播只在雷達漏看那次響） | 程式有但不作動：ZS 的 0x242 讀到固定 −7.22，0x246 的目標旗標也還沒驗證，要先看 ZS log |
 | 儀表 LKA 燈號 | openpilot 控制方向盤時送 2（作用中），其他時候照抄原廠相機（HS 平常是 1 待命）。原本固定送 0（關閉），燈號不亮。重播 11/15 rlog 確認輸出正確；route 18 實車確認 EPS 在狀態 2 照常接受扭力（CtrlSts 1），儀表燈號正常亮起（車主確認） | 同 HS。朋友停車的 log 相機送 0，照抄後一樣是 0；行駛中的值待確認 |
 | 煞車門檻 | 大於 1 格（75 kPa），與 safety 一致 | 同 HS（mg-zs 原本大於 0） |
 | 車門 | 四個車門的原廠訊號（實車驗證） | 駕駛座門讀 47\|2（DBC 裡是 `BntOpenStsHSC2`，原 hs 分支叫 `DrvrDoorOpenSts_H1_Safety`；ZS 的 `DrvrDoorOpenStsHSC2` 不會變），副駕同 HS，左後、右後門共用 `RLDoorOpenStsHSC2`（朋友確認）。route 06 重播四個門都抓得到、整趟沒有誤判，待實車確認 |
