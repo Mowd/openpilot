@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-16（原廠雷達漏看前車警示）
+最後更新：2026-11-16（route 26：輕碰煞車沒偵測到）
 
 ---
 
@@ -51,7 +51,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 安全帶：扣上、解開都正確更新 `seatbeltUnlatched`（實車：啟用中解開，openpilot 立即解除，原廠 ACC 同時自己回到 Standby）
 - [x] 車門：每個車門分別開關都正確，全部關上前 `doorOpen` 都維持 true。原本讀的 `DrvrDoorOpenSts_H1_Safety`（bit 47）開駕駛座門時不會變，已改成四個車門的原廠訊號，用實車 log 重播四個門都正確，行駛中沒有誤判
 - [x] 檔位：P、R、N、D 都有解析，不認得的值回報為 unknown，不會被當成 D
-- [x] 煞車：用駕駛煞車壓力判斷，門檻跟 safety 一致
+- [ ] 煞車：用駕駛煞車壓力判斷，門檻跟 safety 一致。11/16 route 26 發現：輕碰煞車時，煞車開關（0xAF `EPTBrkPdlDscrtInptStsHSC2`）先變 1、壓力只有 75 kPa，原廠 ACC 就取消了，但 openpilot 的門檻是壓力 > 100 kPa，三次都沒偵測到（看起來像 ACC 自己取消）。要改成「煞車開關或壓力」，safety 也要一起改
 - [x] 油門：駕駛只要踩一點就是 `gasPressed`，巡航中也一樣，不會被 ACC 自己的加速誤判
 - [ ] 手煞車 `parkingBrake`、Auto Hold `brakeHoldActive`
 - [x] 車速、停車判斷跟 safety 用同一個訊號（0x23C）
