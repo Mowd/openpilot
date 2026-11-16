@@ -8,6 +8,10 @@ LaneChangeDirection = log.LaneChangeDirection
 LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 LANE_CHANGE_TIME_MAX = 10.
 LANE_CHANGE_START_TIME = 0.5
+# fork (MG HS/ZS, steeringTorque in Nm): the nudge that confirms a lane change. Upstream takes steeringPressed (1 Nm
+# on the MG, like most Nm ports), but hands resting on the HS's wheel give over 1 Nm 31% of the time (route 2b, at
+# highway speed, median 0.85 Nm), over 2 Nm only 2%: lane changes started as soon as the blinker was on
+LANE_CHANGE_NUDGE_TORQUE = 2.0
 
 class DesireHelper:
   def __init__(self):
@@ -42,8 +46,8 @@ class DesireHelper:
         self.lane_change_direction = self.get_lane_change_direction(carstate)
 
         torque_applied = carstate.steeringPressed and \
-                         ((carstate.steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
-                          (carstate.steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right))
+                         ((carstate.steeringTorque > LANE_CHANGE_NUDGE_TORQUE and self.lane_change_direction == LaneChangeDirection.left) or
+                          (carstate.steeringTorque < -LANE_CHANGE_NUDGE_TORQUE and self.lane_change_direction == LaneChangeDirection.right))
 
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
