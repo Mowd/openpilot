@@ -101,7 +101,8 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     startupNoSecOcKey @63;
     startupMaster @64;
     startupCruiseCanceled @105;
-    stockRadarMissedLead @106;  # fork (MG HS): the stock radar ACC doesn't see a lead the camera sees closing in
+    stockRadarMissedLead @106;  # fork (MG HS/ZS): the stock radar ACC doesn't see a lead the camera sees closing in
+    stockRadarLostLead @107;  # fork (MG HS/ZS): the stock ACC accelerates with a lead close ahead its radar doesn't track
     fcw @65;
     steerSaturated @66;
     belowEngageSpeed @67;
