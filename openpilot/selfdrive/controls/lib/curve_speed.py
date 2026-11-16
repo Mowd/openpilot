@@ -19,7 +19,10 @@ A_DECEL = 1.0  # m/s^2, gentle braking expected from the stock ACC once its set 
 ACC_DELAY = 1.5
 T_LOOKAHEAD = 8.0  # s of the predicted path to look at
 MIN_CURVATURE = 1e-4  # 1/m, straighter than this is not a curve
-RISE_RATE = 1.0  # m/s per s: after a curve the target goes back up gradually, so it doesn't flicker
+# m/s per s: after a curve the target goes back up gradually, so it doesn't flicker. 1.0 was too slow: after a turn
+# at an intersection (HS route 2a, R 15-20 m) the curve speed was back to 62 km/h but the target needed ~11 s to
+# get there, and the set speed crawled up from 30 with it (the lead had long gone)
+RISE_RATE = 3.0
 
 
 def curve_speed(model, acc_delay: float = ACC_DELAY) -> float:

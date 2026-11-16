@@ -3,7 +3,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from openpilot.selfdrive.controls.lib.curve_speed import A_DECEL, A_LAT_MAX, ACC_DELAY, CurveSpeed, curve_speed
+from openpilot.common.realtime import DT_MDL
+from openpilot.selfdrive.controls.lib.curve_speed import A_DECEL, A_LAT_MAX, ACC_DELAY, RISE_RATE, CurveSpeed, curve_speed
 
 T = np.linspace(0, 10, 33)
 
@@ -61,6 +62,6 @@ class TestCurveSpeed:
     low = cs.update(True, curve, True)
     assert math.isclose(low, math.sqrt(A_LAT_MAX * 100.0), rel_tol=1e-3)
     # one model frame later on a straight: only up by RISE_RATE * DT_MDL
-    assert cs.update(True, straight, True) < low + 0.1
+    assert cs.update(True, straight, True) <= low + RISE_RATE * DT_MDL + 1e-6
     # no new model frame: unchanged
     assert cs.update(True, straight, False) == cs.target

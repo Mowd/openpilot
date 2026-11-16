@@ -88,6 +88,8 @@ class TestStockRadarWarning:
 
   def test_lost_not_far_tracked_or_pulling_away(self):
     assert not lost(StockRadarWarning(), car_state(v=8.1, accel_request=0.8), lead(d=60.0, v=8.1))  # 7 s gap
+    # HS route 2a: a lead ~65-70 m ahead at the same ~57 km/h, dropped by the radar for a moment: not worth a prompt
+    assert not lost(StockRadarWarning(), car_state(v=15.8, accel_request=0.7), lead(d=68.0, v=15.8))
     assert not lost(StockRadarWarning(), car_state(v=8.1, accel_request=0.8, radar_lead=True), lead(d=30.0, v=8.1))
     assert not lost(StockRadarWarning(), car_state(v=8.1, accel_request=0.8), lead(d=30.0, v=11.0))
 
