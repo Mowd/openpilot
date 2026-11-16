@@ -1,17 +1,23 @@
 """
-Fork feature (MG HS): warn when the stock radar ACC misses a lead that openpilot's camera sees closing in.
+Fork feature (MG HS/ZS): warn when the stock radar ACC misses a lead that openpilot's camera sees.
 
-On these cars the stock radar ACC controls the speed. Now and then its radar doesn't track a slower lead the camera
-sees (HS route 23: a car slowing to ~10 km/h, from 63 m down to 33 m at 39 km/h, the radar's lead flag stayed 0 and
-the ACC asked for no braking until the driver braked). Lowering the set speed (lead_speed.py) can't go under 30 km/h
-and can't stop the car, so this tells the driver to brake: the car port reports whether the radar tracks a lead
-(CarState.stockRadarLead) and how much the ACC asks to brake (CarState.stockAccelRequest). The MG ZS doesn't
-report the ACC's request (NaN), so there the car's measured acceleration stands in for it.
+On these cars the stock radar ACC controls the speed. Now and then its radar doesn't track a lead the camera sees:
+- HS route 23: a car slowing to ~10 km/h, from 63 m down to 33 m at 39 km/h; the radar's lead flag stayed 0 and the
+  ACC asked for no braking until the driver braked. -> "BRAKE!" (missed): closing in, more braking needed than the
+  ACC is doing.
+- HS route 26: a motorcycle 25-35 m ahead at the same ~30 km/h; the radar lost it in a turn and the ACC started
+  accelerating at +1 m/s^2 towards it, the driver braked. Not closing in yet, so no "BRAKE!" (that would have come
+  ~6 s later) -> a lighter prompt (lost): the ACC accelerates with a lead close ahead that its radar doesn't track.
+Lowering the set speed (lead_speed.py) can't go under 30 km/h and can't stop the car, so this tells the driver. The
+car port reports whether the radar tracks a lead (CarState.stockRadarLead) and the ACC's acceleration request
+(CarState.stockAccelRequest); the MG ZS doesn't report the request (NaN), so there the car's measured acceleration
+stands in for it.
 """
 import math
 
 from openpilot.common.realtime import DT_CTRL
 
+# missed: brake now
 TTC_MAX = 5.0  # s, closing in on the lead within this time at the current speeds
 STOP_MARGIN = 4.0  # m to stay behind the lead
 A_MARGIN = 0.5  # m/s^2, braking needed beyond what the ACC asks for
@@ -19,6 +25,12 @@ MIN_CLOSING_SPEED = 1.0  # m/s
 MIN_SPEED = 3.0  # m/s
 T_START = 0.2  # s the situation has to last before warning (single noisy frames)
 T_HOLD = 1.0  # s to keep warning after it ends, so it doesn't flicker
+
+# lost: be ready to brake
+LOST_GAP = 5.0  # s, the lead is within this time gap (route 26's motorcycle: 22-35 m at 29 km/h, so 4 s flickered)
+LOST_ACCEL = 0.3  # m/s^2, the ACC accelerates at least this much
+LOST_PULLING_AWAY = 2.0  # m/s, not when the lead drives away faster than this
+LOST_T_START = 0.5  # s
 
 
 def needs_braking(v_ego: float, d_rel: float, v_lead: float, accel_request: float) -> bool:
@@ -31,25 +43,47 @@ def needs_braking(v_ego: float, d_rel: float, v_lead: float, accel_request: floa
   return ttc < TTC_MAX and a_needed > max(-accel_request, 0.0) + A_MARGIN
 
 
-class StockRadarWarning:
-  def __init__(self):
+def accelerating_towards(v_ego: float, d_rel: float, v_lead: float, accel: float) -> bool:
+  return (v_ego > MIN_SPEED and d_rel < LOST_GAP * v_ego and v_lead < v_ego + LOST_PULLING_AWAY and
+          accel > LOST_ACCEL)
+
+
+class Debounce:
+  def __init__(self, t_start: float, t_hold: float):
+    self.start = round(t_start / DT_CTRL)
+    self.hold = round(t_hold / DT_CTRL)
     self.start_frames = 0
     self.hold_frames = 0
 
-  def update(self, CS, lead) -> bool:
-    """Every control frame (100 Hz): whether to warn the driver to brake."""
-    if not CS.stockRadarValid or not CS.cruiseState.enabled or CS.brakePressed:
-      self.start_frames = 0
-      self.hold_frames = 0
-      return False
+  def reset(self):
+    self.start_frames = 0
+    self.hold_frames = 0
 
-    accel = CS.stockAccelRequest if math.isfinite(CS.stockAccelRequest) else CS.aEgo
-    missed = (lead.present and not CS.stockRadarLead and needs_braking(CS.vEgo, lead.dRel, lead.vLead, accel))
-    if missed:
+  def update(self, cond: bool) -> bool:
+    if cond:
       self.start_frames += 1
-      if self.start_frames * DT_CTRL >= T_START:
-        self.hold_frames = round(T_HOLD / DT_CTRL)
+      if self.start_frames >= self.start:
+        self.hold_frames = self.hold
     else:
       self.start_frames = 0
       self.hold_frames = max(self.hold_frames - 1, 0)
     return self.hold_frames > 0
+
+
+class StockRadarWarning:
+  def __init__(self):
+    self.missed = Debounce(T_START, T_HOLD)
+    self.lost = Debounce(LOST_T_START, T_HOLD)
+
+  def update(self, CS, lead) -> tuple[bool, bool]:
+    """Every control frame (100 Hz): (warn the driver to brake, prompt that the radar lost the lead)."""
+    if not CS.stockRadarValid or not CS.cruiseState.enabled or CS.brakePressed:
+      self.missed.reset()
+      self.lost.reset()
+      return False, False
+
+    accel = CS.stockAccelRequest if math.isfinite(CS.stockAccelRequest) else CS.aEgo
+    untracked = lead.present and not CS.stockRadarLead
+    missed = self.missed.update(untracked and needs_braking(CS.vEgo, lead.dRel, lead.vLead, accel))
+    lost = self.lost.update(untracked and accelerating_towards(CS.vEgo, lead.dRel, lead.vLead, accel))
+    return missed, lost and not missed

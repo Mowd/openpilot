@@ -451,9 +451,13 @@ class SelfdriveD:
     if (planner_fcw or model_fcw) and not self.CP.notCar:
       self.events.add(EventName.fcw)
 
-    # fork (MG HS): the stock radar ACC misses a lead the camera sees closing in and isn't braking for it
-    if self.stock_radar_warning.update(CS, self.sm['radarState'].leadOne):
+    # fork (MG HS/ZS): the stock radar ACC misses a lead the camera sees closing in and isn't braking for it, or it
+    # accelerates with a lead close ahead that its radar doesn't track
+    radar_missed, radar_lost = self.stock_radar_warning.update(CS, self.sm['radarState'].leadOne)
+    if radar_missed:
       self.events.add(EventName.stockRadarMissedLead)
+    if radar_lost:
+      self.events.add(EventName.stockRadarLostLead)
 
     # GPS checks
     gps_ok = self.sm.recv_frame[self.gps_location_service] > 0 and (self.sm.frame - self.sm.recv_frame[self.gps_location_service]) * DT_CTRL < 2.0
