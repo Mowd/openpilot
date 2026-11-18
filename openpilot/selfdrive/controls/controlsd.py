@@ -21,6 +21,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.curve_speed import CurveSpeed
 from openpilot.selfdrive.controls.lib.lead_speed import LeadSpeed
+from openpilot.selfdrive.controls.lib.lead_moving_off import LeadMovingOff
 from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
@@ -58,6 +59,8 @@ class Controls:
     self.curve_speed_enabled = False
     self.lead_speed = LeadSpeed()
     self.lead_speed_enabled = False
+    # fork (MG): also resume from standstill while the lead is moving off (see lead_moving_off.py)
+    self.lead_moving_off = LeadMovingOff() if self.CP.brand == "mg" else None
     self.frame = 0
     self.VM = VehicleModel(self.CP)
     self.LaC: LatControl
@@ -172,9 +175,10 @@ class Controls:
 
     CC.cruiseControl.override = CC.enabled and not CC.longActive and self.CP.openpilotLongitudinalControl
     CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
-    CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
     stock_acc = CC.enabled and self.CP.pcmCruise and not self.CP.openpilotLongitudinalControl
     model_updated = self.sm.updated['modelV2']
+    lead_moving_off = self.lead_moving_off is not None and self.lead_moving_off.update(self.sm['modelV2'], model_updated)
+    CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and (not self.sm['longitudinalPlan'].shouldStop or lead_moving_off)
     targets = (
       self.curve_speed.update(self.curve_speed_enabled and stock_acc, self.sm['modelV2'], model_updated),
       self.lead_speed.update(self.lead_speed_enabled and stock_acc, CS.vEgo, self.sm['modelV2'],
