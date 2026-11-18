@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from openpilot.common.realtime import DT_CTRL
-from openpilot.selfdrive.controls.lib.stock_radar_warning import LOST_T_START, T_HOLD, T_START, StockRadarWarning, \
+from openpilot.selfdrive.controls.lib.stock_radar_warning import LOST_T_START, T_HOLD, T_START, V_LEAD_WINDOW, StockRadarWarning, \
                                                                     needs_braking
 
 
@@ -103,3 +103,25 @@ class TestStockRadarWarning:
     # closing in fast while the ACC still accelerates: only "BRAKE!"
     w = StockRadarWarning()
     assert run_both(w, car_state(v=10.8, accel_request=0.5), lead(d=20.0, v=2.8), seconds=1.0) == (True, False)
+
+  def test_route_3e_noisy_lead_speed(self):
+    # HS route 3e: 34 km/h, a car at ~4 km/h 36 m ahead, but the camera's speed for it jumps up to 32 km/h every few
+    # frames, so the raw speed never says "closing in" for T_START; its lowest speed of the last second does
+    w = StockRadarWarning()
+    cs = car_state(v=34 / 3.6, accel_request=0.05)
+    warned = False
+    for i in range(round(1.0 / DT_CTRL)):
+      warned |= w.update(cs, lead(d=36.0, v=(4 if i % 15 < 5 else 32) / 3.6))[0]
+    assert warned
+
+  def test_low_lead_speed_expires(self):
+    # a slow reading only counts for V_LEAD_WINDOW: the same lead then measured at its real speed doesn't warn
+    w = StockRadarWarning()
+    cs = car_state(v=34 / 3.6, accel_request=0.05)
+    w.update(cs, lead(d=60.0, v=4 / 3.6))
+    assert not run(w, cs, lead(d=36.0, v=30 / 3.6), seconds=V_LEAD_WINDOW + T_START + T_HOLD)
+    # and a frame without a lead forgets it
+    w = StockRadarWarning()
+    w.update(cs, lead(d=60.0, v=4 / 3.6))
+    w.update(cs, lead(present=False))
+    assert not run(w, cs, lead(d=36.0, v=30 / 3.6), seconds=T_START)
