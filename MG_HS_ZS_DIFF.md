@@ -3,7 +3,7 @@
 兩台車用同一套 ADAS（攝影機、雷達）與 CAN 訊息，程式共用 `NON_EV_CAR` 的邏輯，下表只列出不同的地方。
 新功能先在 `hs-phev` 做好、驗證，能套用到 ZS 的就同步到 `zs`。同步方式見最下方。
 
-最後更新：2026-11-19（HS route 3e：鏡頭前車速度跳動讓雷達漏看警示沒響，改用 1 秒內最低前車速度（待實車）；前車只以 1～3 km/h 慢慢開走時 openpilot 判定該停著、不送 RES，前車確實開走時會自動送；2026-11-16 ZS route 16：彎道、前車降速實車都有作動；按鍵途中踩油門被誤判、整趟停用，已修正為放棄那一下，方向對但跳超過一格改成暫停 10 秒（待實車）；ZS 朋友實車 route 05–07（`8598fbbb5`）：三次發動韌體都精確比對到 MG_ZS、沒有 Car Unrecognized；停車起步 6 次、按鍵、Cancel、完全關閉 ACC、行駛中解開安全帶都正常；沒有 AEB／FCW 誤報或轉向故障；開機後約 3 秒前鏡頭 LDW 故障位元會亮（轉向暫時不可用，無聲），HS 沒有；route 06 rlog：FCW 靈敏度、AEB 開關、ACC 主開關都讀得到；ZS 駕駛座門在 47|2，已修正（待實車）、左後右後門共用一個訊號；HS 實車 route 19、1a：Mapbox 導航路線正常、長按加速每次 +1 km/h；route 18 驗證：踩煞車不送 Cancel、自動停車起步、EPS 接受 LKA 狀態 2、儀表 LKA 燈號正常、車距鍵、扭力參數手感良好；踩煞車不再送 Cancel；儀表 LKA 燈號：openpilot 控制時送作用中，其他時候照抄原廠相機；ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
+最後更新：2026-11-19（HS route 3e：鏡頭前車速度跳動讓雷達漏看警示沒響，改用 1 秒內最低前車速度（待實車）；塞車時前車以 1～3 km/h 慢慢往前，openpilot 的規劃判定該停著、不送 RES，駕駛要自己按，改成鏡頭看到前車在走就送（27 次停車重播，原本要自己按的 3 次都會自動起步，待實車）；2026-11-16 ZS route 16：彎道、前車降速實車都有作動；按鍵途中踩油門被誤判、整趟停用，已修正為放棄那一下，方向對但跳超過一格改成暫停 10 秒（待實車）；ZS 朋友實車 route 05–07（`8598fbbb5`）：三次發動韌體都精確比對到 MG_ZS、沒有 Car Unrecognized；停車起步 6 次、按鍵、Cancel、完全關閉 ACC、行駛中解開安全帶都正常；沒有 AEB／FCW 誤報或轉向故障；開機後約 3 秒前鏡頭 LDW 故障位元會亮（轉向暫時不可用，無聲），HS 沒有；route 06 rlog：FCW 靈敏度、AEB 開關、ACC 主開關都讀得到；ZS 駕駛座門在 47|2，已修正（待實車）、左後右後門共用一個訊號；HS 實車 route 19、1a：Mapbox 導航路線正常、長按加速每次 +1 km/h；route 18 驗證：踩煞車不送 Cancel、自動停車起步、EPS 接受 LKA 狀態 2、儀表 LKA 燈號正常、車距鍵、扭力參數手感良好；踩煞車不再送 Cancel；儀表 LKA 燈號：openpilot 控制時送作用中，其他時候照抄原廠相機；ZS：rlog 證實缺 0x251、有 0x1E1，韌體可自動辨識；AEB 不讀 0x251、0x1E1 改為選用，修正 Unknown Vehicle Variant；合併上游 openpilot 2026-11-14；HS 扭力參數改用學習值；車門改讀四個車門訊號；HS 實車驗證按鍵、主開關、自動辨識）
 
 ## 分支
 
@@ -44,7 +44,7 @@
 | 方向燈 | 撥桿位置 `DircnIndLampSwStsHSC2`，短撥維持 1 秒 | 燈號位元 `BlinkerLeft/Right`（mg-zs） |
 | EPS 故障偵測（狀態 3 = 永久故障） | 有 | **沒有**：EPS 型號不同，狀態意義未確認 |
 | 原廠 AEB／FCW 警示 | 共用：FCW 任一級警示；AEB 是雷達作動或 ABS 已執行 AEB 減速（未實車觸發過） | FCW 同 HS；AEB 只看雷達：ZS 沒有 `SCS_HSC2_FrP24`（0x251），讀了會讓 CAN 永遠無效（Unknown Vehicle Variant）。朋友 rlog（`bf23cd5`）的 CANParser 警告證實只缺 0x251，`8598fbb` 已修正，待實車確認 |
-| 停車起步（短按 RES） | 有，實車驗證（11/15 route 18 兩次：雷達起步提示 `ACCGoNotfr` 後立刻送 RES，約 1 秒起步） | 有，實車驗證（11/15 route 05、06 共 6 次：停車後自動送 RES 起步） |
+| 停車起步（短按 RES） | 有，實車驗證（11/15 route 18 兩次：雷達起步提示 `ACCGoNotfr` 後立刻送 RES，約 1 秒起步）。11/19 起（fork 專屬）：鏡頭看到前車在往前走（> 1.1 km/h 持續 0.5 秒）就不等 openpilot 的規劃，雷達起步提示亮著就送 RES（route 3e 前車慢慢爬時原本要駕駛自己按，待實車） | 有，實車驗證（11/15 route 05、06 共 6 次：停車後自動送 RES 起步） |
 | 取消原廠巡航 | 有。實體 Cancel 已實車驗證。踩煞車時原廠 ACC 會自己回到待命（2→1），但常比 openpilot 偵測到煞車晚約 0.1–0.2 秒，原本 openpilot 會趁這段時間送 Cancel，變成撥桿取消（2→4 Brake Only→1）。現在踩煞車期間和放開後 1 秒內不送 Cancel（重播 11/14 log：5 次煞車原本都送，現在都不送；11/15 route 18 實車 5 次踩煞車都直接 2→1，沒送 Cancel） | 有，未驗證 |
 | 巡航按鍵事件、主開關 | 有。SET/RES/加減速/Cancel 已實車驗證；主開關 `CCSwStsOnSwA` 是 ACC 開關狀態，不是按鍵；車距鍵實車驗證（route 18：原廠車距等級跟著變）。長按加速實車驗證（route 19：每 0.2 秒 +1 km/h，30→35），長按減速未測。撥桿推到底關閉 ACC 一定會先經過 Cancel，所以 openpilot 作用中時會先照 Cancel 解除，再變成 ACC 關閉；兩段都已實車驗證（Cancel：route 13；關閉：route 12 停車測試，ACC 1→0，openpilot 判斷主開關關閉） | 0x1E1 設為選用（沒收到時沒有按鍵事件，也不會自動起步或送 Cancel）。朋友 rlog 證實 ZS 的 bus 0 有 0x1E1（約 40 Hz），按鍵功能應該可用，待實車驗證 |
 | counter／checksum 檢查 | 車速 0x23C、雷達 0x242、EPS 0x1EC、方向盤角度 0x1E5、ABS 0x251 的 checksum 和 counter；油門 0xC9 只檢查 checksum；煞車壓力 0x214 只檢查 counter（5 條路線重播沒有誤判；11/16 route 23 實車整趟沒有 CAN 錯誤） | 自己的 DBC `mg_zs_generated` 和 safety 旗標 `ZS`：只檢查車速、EPS 的 checksum，和車速、EPS、煞車壓力、方向盤角度、按鍵、攝影機的 counter。ZS 的雷達 0x242、油門 0xC9 沒有對應的 counter／checksum，方向盤角度 checksum 也不同（3 條路線重播沒有誤判） |

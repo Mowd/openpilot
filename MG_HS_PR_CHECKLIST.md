@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-19（route 3e 停車起步：前車確實開走時自動送 RES，前車只以 1～3 km/h 慢慢爬時 openpilot 判定該停著、要自己按 RES；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
+最後更新：2026-11-19（route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
 
 ---
 
@@ -104,7 +104,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 8. 沿用原廠 ACC
 
-- [x] 原廠 ACC 搭配 openpilot 轉向時，取消、踩油門介入、stop & go 都正常（route 18：前車離開後短按 RES 約 1 秒起步兩次、踩煞車解除五次都直接回到待命；實體 Cancel 在 route 13 驗證；route 3e：前車開走後自動送 RES 起步，但前車只以 1～3 km/h 慢慢往前時，openpilot 的 MPC 和 e2e 模型都判定該停著、不送 RES，駕駛約 6 秒後自己按 RES，這是上游 openpilot 的規劃行為）
+- [x] 原廠 ACC 搭配 openpilot 轉向時，取消、踩油門介入、stop & go 都正常（route 18：前車離開後短按 RES 約 1 秒起步兩次、踩煞車解除五次都直接回到待命；實體 Cancel 在 route 13 驗證；route 3e：前車開走後自動送 RES 起步，但前車只以 1～3 km/h 慢慢往前時，openpilot 的 MPC 和 e2e 模型都判定該停著、不送 RES，駕駛約 6 秒後自己按 RES，這是上游 openpilot 的規劃行為；fork 另外改成鏡頭看到前車在走也送 RES，見第 12 節）
 
 ## 9. 原廠功能
 
@@ -145,7 +145,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [ ] 檢查每幀複製按鍵訊息（`copy.copy`）的寫法是否合適
 - [ ] PR 說明照模板附上 Dongle ID 和 route，還有：車型年份、harness、扭力上限 300 的實測證據、safety 測試結果
 - [ ] 車型文件註明支援程度，例如轉向扭力偏弱、有沒有 stop & go
-- [ ] 拿掉 fork 專屬功能，不放進 PR：彎道自動降速（opendbc `speed_buttons.py`、`car.capnp` 的 `speedTarget`、safety 允許 −／+ 和對應測試；openpilot 的 `curve_speed.py`、`lead_speed.py`、controlsd、兩個設定開關）；原廠雷達漏看前車警示（`car.capnp` 的 `stockRadar*`、carstate 讀 0x242／0x246 的部分；openpilot 的 `stock_radar_warning.py`、`stockRadarMissedLead`／`stockRadarLostLead` 事件）；撥一次方向燈只變換一個車道、變換車道 2 Nm 確認門檻（openpilot 的 `desire_helper.py` 和 `test_desire_helper.py`）
+- [ ] 拿掉 fork 專屬功能，不放進 PR：彎道自動降速（opendbc `speed_buttons.py`、`car.capnp` 的 `speedTarget`、safety 允許 −／+ 和對應測試；openpilot 的 `curve_speed.py`、`lead_speed.py`、controlsd、兩個設定開關）；原廠雷達漏看前車警示（`car.capnp` 的 `stockRadar*`、carstate 讀 0x242／0x246 的部分；openpilot 的 `stock_radar_warning.py`、`stockRadarMissedLead`／`stockRadarLostLead` 事件）；停車起步不等規劃（openpilot 的 `lead_moving_off.py`、controlsd 的 resume 條件、`test_lead_moving_off.py`）；撥一次方向燈只變換一個車道、變換車道 2 Nm 確認門檻（openpilot 的 `desire_helper.py` 和 `test_desire_helper.py`）
 
 ---
 
