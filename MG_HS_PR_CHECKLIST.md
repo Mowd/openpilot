@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-22（HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
+最後更新：2026-11-22（safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
 
 ---
 
@@ -123,7 +123,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 轉向扭力大小、變化速度、駕駛扭力都有檢查
 - [ ] 送出訊息裡所有能控制車輛的欄位都有限制（0x1FD 的其他欄位，例如駕駛接管請求、震動等級，目前沒檢查）
 - [x] counter／checksum 錯誤、訊息遺失、資料過期時會停止控制（車速、EPS、雷達檢查兩者，油門只檢查 checksum，煞車壓力只檢查 counter；5 條路線 safety 重播約 1,570 萬個訊框沒有誤判）
-- [ ] safety 重播時，原本就有部分 0x1FD 轉向訊息在啟用中被擋（route 18 約 1.8 萬次），改 counter／checksum 前後一樣，實車轉向正常，原因待查。官方 CI 也會跑 safety 重播，送 PR 前要解決。11/16 實車（route 23）panda 的 `safetyTxBlocked` 整趟只加 3 次，都在踩煞車解除的那一刻（panda 先停止控制，openpilot 還多送一幀 0x1FD），所以重播的 1.8 萬次是重播本身的問題，不是實車行為
+- [x] safety 重播時 0x1FD 被擋（2026-11-22 查清楚）：是 `replay_drive.py` 的假象。開機前約 7 秒 panda 還在 `noOutput`／`elm327`、繼電器沒切換，原廠攝影機的 0x1FD 直接出現在 bus 0；`replay_drive.py` 從第 0 秒就套用 MG safety，看到 bus 0 的 0x1FD 就判定繼電器故障並一直鎖住，之後每一幀都擋（route 18 的 1.8 萬次就是全部）。官方 CI 的 `test_models.py` 會依 pandaStates 等 panda 切到車輛 safety 模式才開始檢查，不受影響（`replay_drive.py` 不在 CI 裡）。照 CI 的做法重播 route 18、23、26、27、2a：啟用中 0x1FD 共 114,387 幀，0 幀被擋（route 2a 用目前的 PHEV 參數 5 重播也是 0）。實車 route 23 的 `safetyTxBlocked` 只在踩煞車解除那一刻加 3 次，那時已不允許控制，不算違規
 - [x] 繼電器故障偵測涵蓋實際的 harness 架構（0x1FD 有檢查；0x1E1 閘道器本來就會送，所以不檢查）
 - [x] safety 測試涵蓋 `NON_EV` 旗標，而且會擋不允許的指令
 
@@ -151,7 +151,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 
 ## 下一步建議順序
 
-1. 查 safety 重播時 0x1FD 被擋的原因
+1. ~~查 safety 重播時 0x1FD 被擋的原因~~（11/22：重播工具的假象，已排除）
 2. 手煞車／Auto Hold、ESP 關閉
 3. harness 款式確認、整理訊息收送表
 4. 選一段公開 route，整理成英文 PR（拿掉 fork 專屬功能）
