@@ -31,6 +31,7 @@ MIN_CLOSING_SPEED = 1.0  # m/s
 MIN_SPEED = 3.0  # m/s
 T_START = 0.2  # s the situation has to last before warning (single noisy frames)
 T_HOLD = 1.0  # s to keep warning after it ends, so it doesn't flicker
+RADAR_WARNING_LINGER = 5.0  # s selfdrived keeps them on screen after they end ("BRAKE!" as a silent note)
 V_LEAD_WINDOW = 1.0  # s, the camera's lead speed is noisy: closing in uses its lowest value over this time
 
 # lost: be ready to brake
