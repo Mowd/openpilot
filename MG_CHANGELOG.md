@@ -7,6 +7,12 @@
 - **commit**：od = opendbc（`Mowd/opendbc`），op = openpilot（`Mowd/openpilot`）。HS／ZS 各一個時用「／」分開。
 - 兩車的參數、功能差異見 `MG_HS_ZS_DIFF.md`（在 `hs-phev`）。這份紀錄在兩個分支內容相同，每次變更兩邊一起更新。
 
+## 2026-11-22
+
+| 時間 | 分支 | 變更 | 狀態 | commit |
+|---|---|---|---|---|
+| 00:03 | HS、ZS | **EPS 鎖住時暫停轉向請求再重送。** 朋友 ZS route 3d（`9e882bdb9`）回報 openpilot 顯示啟用、方向盤卻沒在控。rlog：駕駛往和 openpilot 相反的方向施力（+0.7～+2.5 Nm，openpilot 要求 −1.2～−3.0 Nm）後，EPS 狀態（0x1EC `ChLKACtrlStsHSC2`）從 1 變成 4（鎖住），`ChLKARespToqVHSC2` 變 1、實際輸出扭力 0；openpilot 繼續送請求、因為車沒轉而把扭力加到 3 Nm 上限，畫面沒有任何警示。整趟 4 次，分別鎖住 120、22、25、18 秒，都要等 openpilot 解除、停止請求，EPS 才在 0.03～2 秒內回到 0，下一次請求就恢復出力。HS 的 log：狀態 4 大多是沒在請求時駕駛大角度轉向造成，多半不用請求就解除，少數是重新請求後才解除。改成 EPS 回報 4 時停送請求 0.2 秒再重送，仍是 4 就每 1 秒再停一次；狀態 4 仍不算轉向故障（算的話駕駛 1.5 秒沒碰方向盤就會解除 openpilot、連帶取消 ACC）。route 3d 用 MG_ZS 重播 carstate→carcontroller：734.6 秒鎖住時就停送請求 | 🔶 | od `b0e49ba0`／`cf6ab771`<br>op `87cbef044`／`760828a52` |
+
 ## 2026-11-19
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
