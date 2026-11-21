@@ -59,7 +59,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 方向盤角度、駕駛扭力、EPS 扭力、`steeringPressed` 的方向和比例都正確
 - [x] 方向燈：只有撥桿位置，所以用 `update_blinker_from_stalk`，短撥維持 1 秒
 - [x] 盲點警示：左右對應正確
-- [x] 轉向故障：攝影機 LDW 故障算暫時故障，EPS 狀態 3 算永久故障。EPS 狀態 4（駕駛反向施力後的鎖定）不算故障，改由 carcontroller 停送請求 0.2 秒再重送（2026-11-22：ZS route 3d 鎖住後 openpilot 持續請求，EPS 鎖 18～120 秒都沒解除，停止請求後 0.03～2 秒就解除；HS 多半不用請求就解除、少數重新請求後才解除，所以停送和重送交替）。HS 實車待確認重送後恢復出力
+- [x] 轉向故障：攝影機 LDW 故障算暫時故障，EPS 狀態 3 算永久故障。EPS 狀態 4（駕駛反向施力後的鎖定）不算故障，改由 carcontroller 停送請求 0.2 秒再重送；EPS 輸出凍結（鎖住前 1.9 秒的前兆）時就提早停送（2026-11-22：ZS route 3d 鎖住後 openpilot 持續請求，EPS 鎖 18～120 秒都沒解除，停止請求後 0.03～2 秒就解除；HS 多半不用請求就解除、少數重新請求後才解除，所以停送和重送交替）。HS 實車待確認重送後恢復出力
 - [ ] 低速轉向鎖定要用 `lowSpeedAlert`，不要當成故障（要先確認 HS 有沒有這種情況）
 - [ ] `accFaulted`、`carFaultedNonCritical`、`carNotReady`、`vehicleSensorsInvalid` 都正確回報（`accFaulted` 目前取自攝影機 TJAICA 故障，未驗證）
 - [ ] 解析 ESP 關閉／作動（還沒做）
