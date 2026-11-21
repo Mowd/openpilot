@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-22（EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
+最後更新：2026-11-22（HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
 
 ---
 
@@ -64,7 +64,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [ ] `accFaulted`、`carFaultedNonCritical`、`carNotReady`、`vehicleSensorsInvalid` 都正確回報（`accFaulted` 目前取自攝影機 TJAICA 故障，未驗證）
 - [ ] 解析 ESP 關閉／作動（還沒做）
 - [x] 原廠 AEB／FCW 設定：車上把 FCW 靈敏度改成 1、3 再改回 2，`FCWSnstvtLvl` 跟著變；關閉 AEB 時 `AEBPedtrnDspCmd` 從 2 變 1。改設定都沒有讓 `stockFcw`／`stockAeb` 誤報
-- [ ] 原廠 AEB／FCW 警示：已實作。`stockFcw` 是 FCW 警示等級不為 0；`stockAeb` 是雷達 AEB 作動，或 ABS 回應已執行 AEB 減速。重播三趟 log 都沒有誤報，但還沒真的發生過警示或 AEB，無法安全地刻意觸發
+- [ ] 原廠 AEB／FCW 警示：已實作。`stockFcw` 是 FCW 警示等級不為 0；`stockAeb` 是雷達 AEB 作動，或 ABS 回應已執行 AEB 減速。重播三趟 log 都沒有誤報，但還沒真的發生過警示或 AEB，無法安全地刻意觸發。2026-11-21 HS route 53、54：原廠 FCW 自然觸發 4 次（手動駕駛、約 25 km/h 近距離跟車、前車煞車），`stockFcw` 都正確變 1、openpilot 顯示 FCW；AEB 還沒發生過
 - [ ] 偵測原廠 LKAS 設定（`invalidLkasSetting`）、非自適應巡航（`cruiseState.nonAdaptive`），如果有需要
 
 ## 5. 按鍵與巡航狀態
