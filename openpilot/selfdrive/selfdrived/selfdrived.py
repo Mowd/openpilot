@@ -17,7 +17,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.common.gps import get_gps_location_service
 
 from openpilot.selfdrive.car.car_events import CarEvents
-from openpilot.selfdrive.controls.lib.stock_radar_warning import StockRadarWarning
+from openpilot.selfdrive.controls.lib.stock_radar_warning import RADAR_WARNING_LINGER, StockRadarWarning
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 from openpilot.selfdrive.selfdrived.events import Events, ET
 from openpilot.selfdrive.selfdrived.helpers import ExcessiveActuationCheck
@@ -114,6 +114,8 @@ class SelfdriveD:
     self.AM = AlertManager()
     self.events = Events()
     self.stock_radar_warning = StockRadarWarning()
+    self.radar_missed_linger = 0
+    self.radar_lost_linger = 0
 
     self.initialized = False
     self.enabled = False
@@ -453,10 +455,21 @@ class SelfdriveD:
 
     # fork (MG HS/ZS): the stock radar ACC misses a lead the camera sees closing in and isn't braking for it, or it
     # accelerates with a lead close ahead that its radar doesn't track
+    # Both stay on screen RADAR_WARNING_LINGER after they end: "BRAKE!" as a silent note (its alarm would keep
+    # sounding after the driver braked), the lost prompt as itself (its sound plays once)
     radar_missed, radar_lost = self.stock_radar_warning.update(CS, self.sm['radarState'].leadOne)
+    linger = round(RADAR_WARNING_LINGER / DT_CTRL)
     if radar_missed:
       self.events.add(EventName.stockRadarMissedLead)
+      self.radar_missed_linger = linger
+    elif self.radar_missed_linger > 0:
+      self.radar_missed_linger -= 1
+      self.events.add(EventName.stockRadarMissedLeadInfo)
     if radar_lost:
+      self.radar_lost_linger = linger
+    elif self.radar_lost_linger > 0:
+      self.radar_lost_linger -= 1
+    if (radar_lost or self.radar_lost_linger > 0) and not radar_missed:
       self.events.add(EventName.stockRadarLostLead)
 
     # GPS checks

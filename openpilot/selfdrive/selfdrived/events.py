@@ -522,6 +522,15 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.MID, VisualAlert.none, AudibleAlert.prompt, .1),
   },
 
+  # fork: after "BRAKE!" ends (usually because the driver braked), say what it was, without its alarm
+  EventName.stockRadarMissedLeadInfo: {
+    ET.PERMANENT: Alert(
+      "Stock Radar Missed the Car Ahead",
+      "",
+      AlertStatus.userPrompt, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
+  },
+
   EventName.ldw: {
     ET.PERMANENT: Alert(
       "Lane Departure Detected",
