@@ -7,6 +7,12 @@
 - **commit**：od = opendbc（`Mowd/opendbc`），op = openpilot（`Mowd/openpilot`）。HS／ZS 各一個時用「／」分開。
 - 兩車的參數、功能差異見 `MG_HS_ZS_DIFF.md`（在 `hs-phev`）。這份紀錄在兩個分支內容相同，每次變更兩邊一起更新。
 
+## 2026-11-23
+
+| 時間 | 分支 | 變更 | 狀態 | commit |
+|---|---|---|---|---|
+| 01:22 | HS、ZS | **套用 torqued 學到的 latAccelOffset，修正直路往左拉（fork 專屬）。** HS route 53～5b（2026-11-21、22，車主 3 個 bookmark 有 2 個是這個情況）：直路上駕駛一直往右施力，平均 −0.4～−0.9 Nm，43～78% 的時間超過 0.5 Nm，往左超過 0.5 Nm 只有 1～8%。用車道線算車在車道裡的位置：openpilot 開、駕駛手放輕時偏左 0.17 m（29～50 km/h；更快時 0.07～0.10 m），駕駛自己開時在正中間（0.00 m），所以不是裝置位置的問題。原因是 roll 補償偏大：路面傾斜估計平均 +2.1～+2.4°，期望側向加速度為 0 時前饋仍有 −0.4 m/s²，約往左 1 Nm。torqued 已學到 latAccelOffset ≈ −0.31 可以抵消，但只有 toyota、hyundai、rivian、honda、volkswagen 會套用學到的值，mg 不在內。改成 MG 只套用學到的 latAccelOffset（限制在 ±0.5 m/s²），latAccelFactor 和 friction 維持 CarParams 的值（ZS 學到的值被駕駛介入拉偏過）。模擬 HS 40 km/h、roll +2.2° 直路：往左出力從滿力的 54%（1.6 Nm）降到 19%（0.6 Nm，剩下的主要是摩擦項）。torqued 只在 54 km/h 以上、沒有駕駛介入時學，學到之前 offset 從 0 慢慢變化 | 🔶 | op `49c7fda07`／`7f63f42ac` |
+
 ## 2026-11-22
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
