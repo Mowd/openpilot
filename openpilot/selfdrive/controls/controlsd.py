@@ -22,6 +22,7 @@ from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.controls.lib.curve_speed import CurveSpeed
 from openpilot.selfdrive.controls.lib.lead_speed import LeadSpeed
 from openpilot.selfdrive.controls.lib.lead_moving_off import LeadMovingOff
+from openpilot.selfdrive.controls.lib.learned_lat_offset import learned_offset_torque_params
 from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 
@@ -103,6 +104,11 @@ class Controls:
       if self.sm.all_checks(['lateralTorqueParameters']) and torque_params.useParams:
         self.LaC.update_torque_parameters(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
+      elif self.sm.all_checks(['lateralTorqueParameters']):
+        # fork (MG): only the learned latAccelOffset (see learned_lat_offset.py)
+        offset_params = learned_offset_torque_params(self.CP, torque_params)
+        if offset_params is not None:
+          self.LaC.update_torque_parameters(*offset_params)
 
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
