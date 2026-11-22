@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-23（HS route 53～5b：直路往左偏 0.17 m，roll 補償偏大、torqued 學到的 offset 沒套用，fork 改成 MG 套用學到的 latAccelOffset（待實車，PR 不含）；20 km/h 以下 12～13% 時間滿力，還沒改；2026-11-22 safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
+最後更新：2026-11-23（HS route 53～5b：直路往左偏 0.17 m，roll 補償偏大、torqued 學到的 offset 沒套用，mg 加入 torqued 允許清單（待實車，要另送 openpilot PR）；20 km/h 以下 12～13% 時間滿力，還沒改；2026-11-22 safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
 
 ---
 
@@ -101,7 +101,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 轉向暫時不能用時，停止送請求並顯示警告
 - [x] 調校：各種速度和彎道都沒有擺動、延遲、扭力飽和（例如 30 km/h 轉不過的那個彎）
   - 2026-11-15：扭力參數從 1.2／0.22 改成 openpilot 實車學習值 0.9／0.19（torqued 約 4260 個 54 km/h 以上的資料點，學到 0.88～0.94、摩擦約 0.19）。route 18 實車：手感良好，時速 30 的急彎都過得去（車主確認）
-- [ ] 直路不偏向一側：2026-11-22 route 53～5b，openpilot 讓 HS 偏左 0.17 m（29～50 km/h），駕駛平均往右施力 0.4～0.9 Nm。原因是 roll 補償偏大（roll 平均 +2.1～+2.4°），torqued 學到 latAccelOffset ≈ −0.31 可抵消，但 mg 不在 torqued 的 `ALLOWED_CARS`。fork 改成 MG 只套用學到的 offset（openpilot `learned_lat_offset.py`，待實車，PR 不含）。上游的 MG HS 會有這個偏差，PR 說明可以提
+- [ ] 直路不偏向一側：2026-11-22 route 53～5b，openpilot 讓 HS 偏左 0.17 m（29～50 km/h），駕駛平均往右施力 0.4～0.9 Nm。原因是 roll 補償偏大（roll 平均 +2.1～+2.4°），torqued 學到 latAccelOffset ≈ −0.31 可抵消，但 mg 不在 torqued 的 `ALLOWED_CARS`。把 mg 加進 torqued 的 `ALLOWED_CARS`，全部套用學到的值（待實車）。這要另外送 openpilot PR（一行），附 rlog 重播 torqued 的結果：HS 學到 0.93～1.05、ZS 0.94～0.97，跟設定值一致
 - [x] `actuatorsOutput` 跟實際送出的指令一致
 
 ## 8. 沿用原廠 ACC
@@ -147,7 +147,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [ ] 檢查每幀複製按鍵訊息（`copy.copy`）的寫法是否合適
 - [ ] PR 說明照模板附上 Dongle ID 和 route，還有：車型年份、harness、扭力上限 300 的實測證據、safety 測試結果
 - [ ] 車型文件註明支援程度，例如轉向扭力偏弱、有沒有 stop & go
-- [ ] 拿掉 fork 專屬功能，不放進 PR：彎道自動降速（opendbc `speed_buttons.py`、`car.capnp` 的 `speedTarget`、safety 允許 −／+ 和對應測試；openpilot 的 `curve_speed.py`、`lead_speed.py`、controlsd、兩個設定開關）；原廠雷達漏看前車警示（`car.capnp` 的 `stockRadar*`、carstate 讀 0x242／0x246 的部分；openpilot 的 `stock_radar_warning.py`、`stockRadarMissedLead`／`stockRadarLostLead` 事件）；停車起步不等規劃（openpilot 的 `lead_moving_off.py`、controlsd 的 resume 條件、`test_lead_moving_off.py`）；撥一次方向燈只變換一個車道、變換車道 2 Nm 確認門檻（openpilot 的 `desire_helper.py` 和 `test_desire_helper.py`）；MG 套用學到的 latAccelOffset（openpilot 的 `learned_lat_offset.py`、controlsd、`test_learned_lat_offset.py`）
+- [ ] 拿掉 fork 專屬功能，不放進 PR：彎道自動降速（opendbc `speed_buttons.py`、`car.capnp` 的 `speedTarget`、safety 允許 −／+ 和對應測試；openpilot 的 `curve_speed.py`、`lead_speed.py`、controlsd、兩個設定開關）；原廠雷達漏看前車警示（`car.capnp` 的 `stockRadar*`、carstate 讀 0x242／0x246 的部分；openpilot 的 `stock_radar_warning.py`、`stockRadarMissedLead`／`stockRadarLostLead` 事件）；停車起步不等規劃（openpilot 的 `lead_moving_off.py`、controlsd 的 resume 條件、`test_lead_moving_off.py`）；撥一次方向燈只變換一個車道、變換車道 2 Nm 確認門檻（openpilot 的 `desire_helper.py` 和 `test_desire_helper.py`）
 
 ---
 
@@ -157,4 +157,5 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 2. 手煞車／Auto Hold、ESP 關閉
 3. harness 款式確認、整理訊息收送表
 4. 選一段公開 route，整理成英文 PR（拿掉 fork 專屬功能）
-5. 持續觀察：EPS 故障、原廠 AEB／FCW 自然觸發時的 log、韌體查詢有沒有留下故障碼
+5. opendbc PR 合併後，另送 openpilot PR：torqued 的 `ALLOWED_CARS` 加 mg（附 rlog 重播 torqued 的結果和實車前後比較）
+6. 持續觀察：EPS 故障、原廠 AEB／FCW 自然觸發時的 log、韌體查詢有沒有留下故障碼
