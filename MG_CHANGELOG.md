@@ -11,7 +11,7 @@
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
 |---|---|---|---|---|
-| 01:22 | HS、ZS | **套用 torqued 學到的 latAccelOffset，修正直路往左拉（fork 專屬）。** HS route 53～5b（2026-11-21、22，車主 3 個 bookmark 有 2 個是這個情況）：直路上駕駛一直往右施力，平均 −0.4～−0.9 Nm，43～78% 的時間超過 0.5 Nm，往左超過 0.5 Nm 只有 1～8%。用車道線算車在車道裡的位置：openpilot 開、駕駛手放輕時偏左 0.17 m（29～50 km/h；更快時 0.07～0.10 m），駕駛自己開時在正中間（0.00 m），所以不是裝置位置的問題。原因是 roll 補償偏大：路面傾斜估計平均 +2.1～+2.4°，期望側向加速度為 0 時前饋仍有 −0.4 m/s²，約往左 1 Nm。torqued 已學到 latAccelOffset ≈ −0.31 可以抵消，但只有 toyota、hyundai、rivian、honda、volkswagen 會套用學到的值，mg 不在內。改成 MG 只套用學到的 latAccelOffset（限制在 ±0.5 m/s²），latAccelFactor 和 friction 維持 CarParams 的值（ZS 學到的值被駕駛介入拉偏過）。模擬 HS 40 km/h、roll +2.2° 直路：往左出力從滿力的 54%（1.6 Nm）降到 19%（0.6 Nm，剩下的主要是摩擦項）。torqued 只在 54 km/h 以上、沒有駕駛介入時學，學到之前 offset 從 0 慢慢變化 | 🔶 | op `49c7fda07`／`7f63f42ac` |
+| 01:22 | HS、ZS | **MG 加入 torqued 允許清單，全部套用學到的扭力參數。** HS route 53～5b（2026-11-21、22，車主 3 個 bookmark 有 2 個是這個情況）：直路上駕駛一直往右施力，平均 −0.4～−0.9 Nm，43～78% 的時間超過 0.5 Nm，往左超過 0.5 Nm 只有 1～8%。用車道線算車在車道裡的位置：openpilot 開、駕駛手放輕時偏左 0.17 m（29～50 km/h；更快時 0.07～0.10 m），駕駛自己開時在正中間（0.00 m），所以不是裝置位置的問題。原因是 roll 補償偏大：路面傾斜估計平均 +2.1～+2.4°，期望側向加速度為 0 時前饋仍有 −0.4 m/s²，約往左 1 Nm。torqued 已學到 latAccelOffset ≈ −0.31 可以抵消，但只有 toyota、hyundai、rivian、honda、volkswagen 會套用學到的值，mg 不在內。改成把 mg 加進 `ALLOWED_CARS`，latAccelFactor、friction、latAccelOffset 都套用學到的值，學習範圍沿用上游的 ±30%（HS 0.63～1.17、ZS 0.70～1.30），controlsd 維持上游原樣（同晚先做的「只套 offset」版本 `49c7fda07`／`7f63f42ac` 已取代）。用 rlog 重播 torqued：HS 2a／2b 學到 1.05、23／26／27 學到 0.93（設定 0.90），ZS 08 學到 0.94、41 學到 0.97（設定 1.0），HS 車上實際學到 0.84～0.87、friction 0.175～0.18；ZS 學到的 offset 接近 0（−0.03～+0.04）。ZS route 3d（朋友太太第一次開、常頂住方向盤）會學到 0.14，會被範圍下限擋在 0.70（出力約多 43%），不另外處理。排除駕駛扭力超過 0.5 Nm 的資料點反而讓正常路線學偏低（HS 0.93→0.61），MG 手輕扶就有 0.5～2 Nm，不能用來過濾 | 🔶 | op `474bda5af`／`3b9c0c56a` |
 
 ## 2026-11-22
 
