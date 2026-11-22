@@ -24,7 +24,7 @@
 | 軸距 | 2.72 m（規格表） | 2.58 m（mg-zs） |
 | 轉向比 | 16.8（實車 log 學習值） | 18.7（11/22 起；paramsd 在 route 08、16、3d 學到 18.6～18.9。原本沿用 mg-zs 的 15.8） |
 | 扭力參數 `override.toml` | `[0.9, 2.5, 0.19]`（openpilot 實車學習值，約 4260 個高速資料點；route 18 實車手感良好，時速 30 急彎都過得去） | `[1.0, 2.5, 0.22]`（11/22 起；torqued 在 route 08 學到 0.96～1.00、friction 0.23。route 16、3d 駕駛常扶住方向盤反向施力，學到的值被拉低到 0.33～0.71，不採用。原本 mg-zs 的 `[1.2, 2.5, 0.18]`） |
-| 套用 torqued 學到的 latAccelOffset（fork 專屬） | 有（11/23 起）。route 53～5b 直路偏左 0.17 m、駕駛平均往右 0.4～0.9 Nm；roll 補償偏大，torqued 學到 −0.31。latAccelFactor、friction 不用學到的值 | 有（11/23 起，同 HS）。ZS 學到的 offset 還沒看過；route 16、3d 駕駛常往左扶方向盤，學到的 factor 被拉低，offset 待確認 |
+| 套用 torqued 學到的 latAccelOffset（fork 專屬） | 有（11/23 起）。route 53～5b 直路偏左 0.17 m、駕駛平均往右 0.4～0.9 Nm；roll 補償偏大，torqued 學到 −0.31。latAccelFactor、friction 不用學到的值 | 有（11/23 起，同 HS）。ZS 學到的 offset 接近 0（route 08、16、3d、41 都在 −0.03～+0.04），實際上沒有作用。ZS 沒有 HS 那種往左偏 |
 | 扭力上限 | 300（實測 EPS 硬上限 3.0 Nm） | 300（未實測上限） |
 | 扭力增加／減少速度 | 7 / 11 | 7 / 8（mg-zs 原本 8/8，8 超過 ISO 11270 改 7） |
 | 車型辨識 | 韌體自動辨識（實車驗證：兩次冷啟動都成功） | 韌體自動辨識（11/16 拿掉強制 `FINGERPRINT="MG_ZS"`，待朋友更新後實車確認）。朋友 rlog（`bf23cd5`）：EPS 0x721、相機 0x733、雷達 0x732 都在 bus 0 回應，三個版本都和 MG_ZS 完全相符。11/15 route 05–07 三次發動：同樣三顆 ECU 都在 bus 0 回應，用 zs 分支比對都精確辨識為 MG_ZS |
