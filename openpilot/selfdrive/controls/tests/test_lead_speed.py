@@ -1,16 +1,17 @@
 from types import SimpleNamespace
 
-from openpilot.selfdrive.controls.lib.lead_speed import A_START, RELEASE_DELAY, T_AHEAD, LeadSpeed
+from openpilot.selfdrive.controls.lib.lead_speed import A_START, RELEASE_DELAY, T_AHEAD, V_LEAD_WINDOW, LeadSpeed
 
 
-def model(a):
-  return SimpleNamespace(action=SimpleNamespace(desiredAcceleration=a))
+def model(a, v_lead=None, v_ego=17.0):
+  leads = [] if v_lead is None else [SimpleNamespace(v=[v_lead])]
+  return SimpleNamespace(action=SimpleNamespace(desiredAcceleration=a), leadsV3=leads, velocity=SimpleNamespace(x=[v_ego]))
 
 
-def run(ls, a, v=17.0, has_lead=True, frames=40):
+def run(ls, a, v=17.0, has_lead=True, frames=40, v_lead=None):
   out = 0.0
   for _ in range(frames):
-    out = ls.update(True, v, model(a), has_lead, True)
+    out = ls.update(True, v, model(a, v_lead, v), has_lead, True)
   return out
 
 
@@ -58,3 +59,25 @@ class TestLeadSpeed:
     for _ in range(3):
       assert run(ls, 0.3, frames=20) > 0.0  # released for 1 s
       assert run(ls, -1.0, frames=20) > 0.0  # and wanted again: still the same slowdown, no let go in between
+
+  def test_not_below_the_lead(self):
+    # MG ZS route 41: 49 km/h behind a lead slowing to ~33 km/h, the model wants -1.7 m/s^2: the target stays at the
+    # lead's speed instead of 49 - 24 = 25 km/h, so the ACC doesn't fall back behind the lead once it stops slowing
+    ls = LeadSpeed()
+    assert abs(run(ls, -1.7, v=49 / 3.6, v_lead=33 / 3.6) - 33 / 3.6) < 0.1
+    # a stopping lead: the target goes down with it (to the planned 30 km/h - 1.7 m/s^2 * T_AHEAD)
+    assert abs(run(ls, -1.7, v=30 / 3.6, v_lead=2 / 3.6) - (30 / 3.6 - 1.7 * T_AHEAD)) < 0.1
+
+  def test_lowest_lead_speed(self):
+    # the camera's lead speed jumps: the floor uses its lowest value over the last V_LEAD_WINDOW
+    ls = LeadSpeed()
+    for i in range(round(V_LEAD_WINDOW / 0.05)):
+      ls.update(True, 15.0, model(-3.0, 8.0 if i % 4 == 0 else 12.0, 15.0), True, True)
+    assert abs(ls.target - 8.0) < 0.1
+
+  def test_lead_speed_relative_to_the_model(self):
+    # the model's ego speed is a little higher than vEgo: its lead speed counts relative to it, like radard
+    ls = LeadSpeed()
+    for _ in range(40):
+      ls.update(True, 13.0, model(-2.0, 10.0, 14.0), True, True)
+    assert abs(ls.target - 9.0) < 0.1

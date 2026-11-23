@@ -12,7 +12,10 @@ import numpy as np
 
 from openpilot.common.realtime import DT_MDL
 
-A_LAT_MAX = 2.0  # m/s^2, lateral acceleration allowed in a curve
+# m/s^2, lateral acceleration allowed in a curve. 2.0 was too slow: an MG ZS on-ramp loop (R ~90 m) was held at 44-48
+# km/h for ~30 s, the driver takes it at 52-56 km/h (behind a lead, ~2.6 m/s^2) and pressed the gas at 49 km/h in a
+# R ~75 m curve (~2.5 m/s^2)
+A_LAT_MAX = 2.5
 A_DECEL = 1.0  # m/s^2, gentle braking expected from the stock ACC once its set speed drops
 # s from the first tap until the stock ACC starts braking: measured on an MG ZS on-ramp, set speed 70 -> 45 km/h
 # at 67 km/h, it braked ~1.5 s later (then at -1.3 to -1.5 m/s^2); without it the slowdown started inside the curve
