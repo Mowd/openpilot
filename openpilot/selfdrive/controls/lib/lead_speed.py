@@ -8,8 +8,13 @@ into it). While it wants to slow down for a lead, this asks for a set speed a fe
 the current speed; the car port lowers the stock ACC set speed (CarControl.cruiseControl.speedTarget) with the
 cruise switches and restores the driver's speed as soon as the model no longer wants to slow down (if the lead is
 still slower, the stock ACC follows it anyway).
+The target never goes below the lead's own speed (its lowest over the last V_LEAD_WINDOW, the camera's lead speed
+is noisy): the stock ACC follows the lead anyway, and a lower set speed only holds the car back once the lead stops
+slowing. MG ZS route 41: a lead slowed from 42 to ~33 km/h, the target went down to 25 km/h (set speed 30), the ACC
+kept slowing to 30 behind a lead at 31-34 km/h, and the driver pressed the gas.
 """
 import math
+from collections import deque
 
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
@@ -19,6 +24,7 @@ A_KEEP = -0.2  # m/s^2, keep going while it still wants this much
 T_AHEAD = 4.0  # s, target = current speed + wanted acceleration over this time
 ACCEL_RC = 0.5  # s, smoothing of the model's wanted acceleration
 RELEASE_DELAY = 1.5  # s to hold the last target after it stops slowing: the wanted braking flickers around A_START
+V_LEAD_WINDOW = 1.0  # s, the target stays at or above the lowest lead speed over this time
 
 
 class LeadSpeed:
@@ -27,12 +33,14 @@ class LeadSpeed:
     self.slowing = False
     self.target = math.inf
     self.release_frames = 0
+    self.v_leads: deque[float] = deque(maxlen=round(V_LEAD_WINDOW / DT_MDL))
 
   def reset(self):
     self.accel.x = 0.0
     self.slowing = False
     self.target = math.inf
     self.release_frames = 0
+    self.v_leads.clear()
 
   def update(self, active: bool, v_ego: float, model, has_lead: bool, model_updated: bool) -> float:
     """CarControl.cruiseControl.speedTarget (m/s), 0 = no target."""
@@ -42,11 +50,17 @@ class LeadSpeed:
 
     if model_updated:
       a = self.accel.update(model.action.desiredAcceleration)
+      leads = model.leadsV3
+      if has_lead and len(leads) and len(leads[0].v) and len(model.velocity.x):
+        # like radard: the model's speed relative to its own ego speed, added to the car's (vEgo is ~3 km/h lower)
+        self.v_leads.append(v_ego + leads[0].v[0] - model.velocity.x[0])
+      else:
+        self.v_leads.clear()
       self.slowing = has_lead and a < (A_KEEP if self.slowing else A_START)
       # follows the wanted braking both ways while slowing, and lets go shortly after: a slow release held the
       # set speed down for ~10 s after the lead had gone, while the model already wanted to speed up
       if self.slowing:
-        self.target = max(v_ego + a * T_AHEAD, 0.0)
+        self.target = max(v_ego + a * T_AHEAD, min(self.v_leads, default=0.0), 0.0)
         self.release_frames = round(RELEASE_DELAY / DT_MDL)
       elif self.release_frames > 0:
         self.release_frames -= 1
