@@ -39,19 +39,19 @@ class TestStockRadarWarning:
   def test_not_when_the_radar_sees_it(self):
     assert not run(StockRadarWarning(), car_state(radar_lead=True), lead())
 
-  def test_not_when_the_acc_brakes_enough(self):
-    assert not run(StockRadarWarning(), car_state(accel_request=-2.0), lead())
-
-  def test_measured_accel_without_a_request(self):
-    # MG ZS: no ACC request (NaN), the car's own deceleration counts instead
+  def test_route_53_acc_letting_go(self):
+    # HS route 53: the lead changed lanes, a car at ~1 km/h 41 m ahead at 32 km/h; the radar's lead flag went 0 and
+    # the ACC was letting go of the braking it did for the car that left (-1.4 -> -0.7 m/s^2): that braking doesn't count
+    assert run(StockRadarWarning(), car_state(v=31.7 / 3.6, accel_request=-0.68), lead(d=41.3, v=0.7 / 3.6))
+    # MG ZS: no ACC request (NaN), its measured deceleration doesn't count either
     nan = float('nan')
-    assert run(StockRadarWarning(), car_state(accel_request=nan, a_ego=-0.1), lead())
-    assert not run(StockRadarWarning(), car_state(accel_request=nan, a_ego=-2.0), lead())
+    assert run(StockRadarWarning(), car_state(accel_request=nan, a_ego=-2.0), lead())
 
   def test_not_far_away_or_not_closing(self):
-    assert not needs_braking(10.8, 80.0, 2.8, 0.0)  # 10 s away
-    assert not needs_braking(10.8, 20.0, 10.5, 0.0)  # following at the same speed
-    assert not needs_braking(10.8, 15.0, 12.0, 0.0)  # pulling away
+    assert not needs_braking(10.8, 80.0, 2.8)  # 10 s away
+    assert not needs_braking(10.8, 20.0, 10.5)  # following at the same speed
+    assert not needs_braking(10.8, 15.0, 12.0)  # pulling away
+    assert not needs_braking(10.8, 9.0, 8.8)  # closing in within 4.5 s, but easing off a little is enough
 
   def test_not_without_a_lead_or_cruise(self):
     assert not run(StockRadarWarning(), car_state(), lead(present=False))

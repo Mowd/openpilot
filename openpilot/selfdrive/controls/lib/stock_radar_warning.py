@@ -13,10 +13,15 @@ On these cars the stock radar ACC controls the speed. Now and then its radar doe
   missed check uses the lowest lead speed of the last V_LEAD_WINDOW, which warned 1.2 s before the driver braked
   (no extra warnings in 15 routes, ~92 min engaged; the only other new one, ZS route 6, was 0.7 s before the driver
   braked too).
+- HS route 53: the lead changed lanes and left a car almost stopped ~45 m ahead (31 km/h -> 5 km/h). The ACC was
+  braking at -1.4 m/s^2 for the car that left; once the radar's lead flag went 0 it let go (-> 0 within 2 s). The
+  missed check counted that leftover braking and waited 0.8 s more, until the ACC had nearly let go; the driver
+  braked 1.3 s after the warning. Without a radar lead the ACC goes back to the set speed, so the missed check
+  ignores its braking: the same warning 0.8 s earlier, and no extra ones in 37 routes (~205 min engaged, HS and ZS).
 Lowering the set speed (lead_speed.py) can't go under 30 km/h and can't stop the car, so this tells the driver. The
 car port reports whether the radar tracks a lead (CarState.stockRadarLead) and the ACC's acceleration request
-(CarState.stockAccelRequest); the MG ZS doesn't report the request (NaN), so there the car's measured acceleration
-stands in for it.
+(CarState.stockAccelRequest), used by the lost prompt; the MG ZS doesn't report the request (NaN), so there the car's
+measured acceleration stands in for it.
 """
 import math
 from collections import deque
@@ -26,7 +31,7 @@ from openpilot.common.realtime import DT_CTRL
 # missed: brake now
 TTC_MAX = 5.0  # s, closing in on the lead within this time at the current speeds
 STOP_MARGIN = 4.0  # m to stay behind the lead
-A_MARGIN = 0.5  # m/s^2, braking needed beyond what the ACC asks for
+A_MIN = 0.5  # m/s^2, braking needed at least this much
 MIN_CLOSING_SPEED = 1.0  # m/s
 MIN_SPEED = 3.0  # m/s
 T_START = 0.2  # s the situation has to last before warning (single noisy frames)
@@ -42,14 +47,14 @@ LOST_MAX_DIST = 40.0  # m: farther leads are often dropped by the radar for a mo
 LOST_T_START = 0.5  # s
 
 
-def needs_braking(v_ego: float, d_rel: float, v_lead: float, accel_request: float) -> bool:
+def needs_braking(v_ego: float, d_rel: float, v_lead: float) -> bool:
   closing = v_ego - v_lead
   if v_ego < MIN_SPEED or closing < MIN_CLOSING_SPEED:
     return False
   ttc = d_rel / closing
   # constant deceleration to come down to the lead's speed STOP_MARGIN behind it
   a_needed = closing ** 2 / (2 * max(d_rel - STOP_MARGIN, 0.5))
-  return ttc < TTC_MAX and a_needed > max(-accel_request, 0.0) + A_MARGIN
+  return ttc < TTC_MAX and a_needed > A_MIN
 
 
 def accelerating_towards(v_ego: float, d_rel: float, v_lead: float, accel: float) -> bool:
@@ -99,6 +104,6 @@ class StockRadarWarning:
 
     accel = CS.stockAccelRequest if math.isfinite(CS.stockAccelRequest) else CS.aEgo
     untracked = lead.present and not CS.stockRadarLead
-    missed = self.missed.update(untracked and needs_braking(CS.vEgo, lead.dRel, min(self.v_leads, default=lead.vLead), accel))
+    missed = self.missed.update(untracked and needs_braking(CS.vEgo, lead.dRel, min(self.v_leads, default=lead.vLead)))
     lost = self.lost.update(untracked and accelerating_towards(CS.vEgo, lead.dRel, lead.vLead, accel))
     return missed, lost and not missed
