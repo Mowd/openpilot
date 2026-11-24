@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-23（fork 專屬調速：彎道側向加速度 2.5、ACC 不收按鍵暫停 2 秒、前車降速不低於前車速度（PR 不含）；HS route 53 雷達漏看兩次都是前車換出車道，fork 專屬警示改成雷達沒追到前車時不算 ACC 的煞車（PR 不含）；HS route 53～5b：直路往左偏 0.17 m，roll 補償偏大、torqued 學到的 offset 沒套用，mg 加入 torqued 允許清單（待實車，要另送 openpilot PR）；20 km/h 以下 12～13% 時間滿力，還沒改；2026-11-22 safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
+最後更新：2026-11-24（ZS 專屬：safety 略過 EPS 0x1EC checksum，只在 `zs` 分支，HS PR 不受影響；2026-11-23 fork 專屬調速：彎道側向加速度 2.5、ACC 不收按鍵暫停 2 秒、前車降速不低於前車速度（PR 不含）；HS route 53 雷達漏看兩次都是前車換出車道，fork 專屬警示改成雷達沒追到前車時不算 ACC 的煞車（PR 不含）；HS route 53～5b：直路往左偏 0.17 m，roll 補償偏大、torqued 學到的 offset 沒套用，mg 加入 torqued 允許清單（待實車，要另送 openpilot PR）；20 km/h 以下 12～13% 時間滿力，還沒改；2026-11-22 safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
 
 ---
 
@@ -159,3 +159,4 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 4. 選一段公開 route，整理成英文 PR（拿掉 fork 專屬功能）
 5. opendbc PR 合併後，另送 openpilot PR：torqued 的 `ALLOWED_CARS` 加 mg（附 rlog 重播 torqued 的結果和實車前後比較）
 6. 持續觀察：EPS 故障、原廠 AEB／FCW 自然觸發時的 log、韌體查詢有沒有留下故障碼
+7. 之後如果要送 MG ZS：ZS 的 safety 有自己的接收檢查（雷達 0x242、油門 0xC9 不檢查；EPS 0x1EC 只檢查 counter，因為 ZS 的 EPS 偶爾送出 counter 進位、內容沒變的 frame），PR 要附 route 3d seg 19、4b seg 35 的 rlog frame 當證據，說明為什麼略過一個原本有 checksum 的訊息
