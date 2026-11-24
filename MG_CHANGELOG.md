@@ -7,6 +7,12 @@
 - **commit**：od = opendbc（`Mowd/opendbc`），op = openpilot（`Mowd/openpilot`）。HS／ZS 各一個時用「／」分開。
 - 兩車的參數、功能差異見 `MG_HS_ZS_DIFF.md`（在 `hs-phev`）。這份紀錄在兩個分支內容相同，每次變更兩邊一起更新。
 
+## 2026-11-24
+
+| 時間 | 分支 | 變更 | 狀態 | commit |
+|---|---|---|---|---|
+| 14:10 | ZS | **ZS safety：EPS 0x1EC 不檢查 checksum，只留 counter。** 朋友 route 4b（2026-11-23，`c2dd639a0`）bookmark「直線突然跳 take control」：晚上直線 66 km/h、踩著油門，2129.48 秒 panda `safetyRxInvalid` 0→1、`controls_allowed` 被關掉，原廠 ACC 還開著，2 秒後 controlsMismatch 跳 TAKE CONTROL IMMEDIATELY，直到朋友 9 秒後按 cancel。rlog 看到 EPS 0x1EC 送出 `a48f66d8…`（counter 10）→ `b48f66d8…`（counter 11，扭力和 PV checksum 還是上一則的）→ `b48766e7…`（counter 11 重送、正確），bus 0 沒有 CAN 錯誤；route 3d seg 19 也有一次一樣的（`ac0077f5` → `bc0077f5` → `bc0077f4`，當時 op 已解除）。891 個 log 檔裡只有這兩次，HS 從來沒有，其他 ZS rlog 這幾則訊息全部正確。改成只在 ZS 的 safety 接收檢查略過 0x1EC checksum，counter 檢查保留（重複的 counter 只算一次錯誤，遠低於 5 次上限）；carstate 的 DBC 仍檢查，只會丟掉那一則。HS 不變。safety 測試用那 8 則實車 frame 重播，controls_allowed 維持開著。同趟另查：第 54 段前車開走起步慢約 4 秒，是雷達起步提示 3269.1 秒就亮、op 每秒送一次 RES，ACC 前 3 次都沒反應（HS 起步一律 1 次；ZS 以前最多 2 次），和 ZS 偶爾不收按鍵是同一個問題；按鍵被忽略的兩長串（1282～1360、2072～2125 秒）送出的 frame 都上了 bus、排列和被接受時相同，所有 CAN bit 也分不出差別，原因仍不明 | 🔶 | od `b46e97f5`<br>op `b8d020e0a` |
+
 ## 2026-11-23
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
