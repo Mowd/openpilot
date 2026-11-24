@@ -10,7 +10,7 @@
 不需要做的部分：openpilot 自己控制油門煞車、雷達解析。HS 沿用原廠 ACC，官方不要求這些。
 stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒有自動停車起步。
 
-最後更新：2026-11-24（ZS 專屬：safety 略過 EPS 0x1EC checksum，只在 `zs` 分支，HS PR 不受影響；2026-11-23 fork 專屬調速：彎道側向加速度 2.5、ACC 不收按鍵暫停 2 秒、前車降速不低於前車速度（PR 不含）；HS route 53 雷達漏看兩次都是前車換出車道，fork 專屬警示改成雷達沒追到前車時不算 ACC 的煞車（PR 不含）；HS route 53～5b：直路往左偏 0.17 m，roll 補償偏大、torqued 學到的 offset 沒套用，mg 加入 torqued 允許清單（待實車，要另送 openpilot PR）；20 km/h 以下 12～13% 時間滿力，還沒改；2026-11-22 safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
+最後更新：2026-11-24（torqued 套用後實車偏左改善到 0.06 m；ZS 專屬：safety 略過 EPS 0x1EC checksum，只在 `zs` 分支，HS PR 不受影響；2026-11-23 fork 專屬調速：彎道側向加速度 2.5、ACC 不收按鍵暫停 2 秒、前車降速不低於前車速度（PR 不含）；HS route 53 雷達漏看兩次都是前車換出車道，fork 專屬警示改成雷達沒追到前車時不算 ACC 的煞車（PR 不含）；HS route 53～5b：直路往左偏 0.17 m，roll 補償偏大、torqued 學到的 offset 沒套用，mg 加入 torqued 允許清單（待實車，要另送 openpilot PR）；20 km/h 以下 12～13% 時間滿力，還沒改；2026-11-22 safety 重播 0x1FD 被擋：`replay_drive.py` 開機前就套用 MG safety 造成的假象，照 CI 做法 5 條路線 0 幀被擋；HS route 53、54 原廠 FCW 自然觸發 4 次，`stockFcw` 正確；EPS 狀態 4：鎖住時停送請求再重送，ZS route 3d 發現持續請求時不會解除；2026-11-19 route 3e 停車起步：前車只以 1～3 km/h 慢慢爬時 openpilot 的規劃判定該停著、要自己按 RES，fork 改成鏡頭看到前車在走就送（待實車，PR 不含）；之前 2026-11-16：支援 MG HS 1.5 油車：0xAF 區分 PHEV／油車、修正油車韌體版本）
 
 ---
 
@@ -101,7 +101,7 @@ stop & go 也不是必要條件，官方支援的 406 個車款中有 97 個沒�
 - [x] 轉向暫時不能用時，停止送請求並顯示警告
 - [x] 調校：各種速度和彎道都沒有擺動、延遲、扭力飽和（例如 30 km/h 轉不過的那個彎）
   - 2026-11-15：扭力參數從 1.2／0.22 改成 openpilot 實車學習值 0.9／0.19（torqued 約 4260 個 54 km/h 以上的資料點，學到 0.88～0.94、摩擦約 0.19）。route 18 實車：手感良好，時速 30 的急彎都過得去（車主確認）
-- [ ] 直路不偏向一側：2026-11-22 route 53～5b，openpilot 讓 HS 偏左 0.17 m（29～50 km/h），駕駛平均往右施力 0.4～0.9 Nm。原因是 roll 補償偏大（roll 平均 +2.1～+2.4°），torqued 學到 latAccelOffset ≈ −0.31 可抵消，但 mg 不在 torqued 的 `ALLOWED_CARS`。把 mg 加進 torqued 的 `ALLOWED_CARS`，全部套用學到的值（待實車）。這要另外送 openpilot PR（一行），附 rlog 重播 torqued 的結果：HS 學到 0.93～1.05、ZS 0.94～0.97，跟設定值一致
+- [ ] 直路不偏向一側：2026-11-22 route 53～5b，openpilot 讓 HS 偏左 0.17 m（29～50 km/h），駕駛平均往右施力 0.4～0.9 Nm。原因是 roll 補償偏大（roll 平均 +2.1～+2.4°），torqued 學到 latAccelOffset ≈ −0.31 可抵消，但 mg 不在 torqued 的 `ALLOWED_CARS`。把 mg 加進 torqued 的 `ALLOWED_CARS`，全部套用學到的值（11/23 route 5e～60 實車：手輕扶時偏左 0.17 → 0.06 m，但直路上駕駛仍往右施力約 0.4～0.5 Nm）。這要另外送 openpilot PR（一行），附 rlog 重播 torqued 的結果：HS 學到 0.93～1.05、ZS 0.94～0.97，跟設定值一致
 - [x] `actuatorsOutput` 跟實際送出的指令一致
 
 ## 8. 沿用原廠 ACC
