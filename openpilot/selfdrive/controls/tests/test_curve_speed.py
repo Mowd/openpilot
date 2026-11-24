@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.curve_speed import A_DECEL, A_LAT_MAX, ACC_DELAY, RISE_RATE, CurveSpeed, curve_speed
+from openpilot.selfdrive.controls.lib.curve_speed import A_DECEL, A_LAT_MAX, A_LAT_MAX_CAR, ACC_DELAY, RISE_RATE, CurveSpeed, curve_speed
 
 T = np.linspace(0, 10, 33)
 
@@ -65,3 +65,11 @@ class TestCurveSpeed:
     assert cs.update(True, straight, True) <= low + RISE_RATE * DT_MDL + 1e-6
     # no new model frame: unchanged
     assert cs.update(True, straight, False) == cs.target
+
+  def test_per_car_lateral_limit(self):
+    # MG HS (EPS capped at 3 Nm): lower lateral acceleration; other cars (MG ZS) keep A_LAT_MAX
+    assert A_LAT_MAX_CAR["MG_HS"] < A_LAT_MAX
+    hs = CurveSpeed("MG_HS").update(True, model(20.0, 0.2), True)
+    zs = CurveSpeed("MG_ZS").update(True, model(20.0, 0.2), True)
+    assert math.isclose(hs, math.sqrt(A_LAT_MAX_CAR["MG_HS"] * 100.0), rel_tol=1e-3)
+    assert math.isclose(zs, math.sqrt(A_LAT_MAX * 100.0), rel_tol=1e-3)
