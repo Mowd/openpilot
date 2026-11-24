@@ -55,7 +55,7 @@ class Controls:
 
     self.LoC = LongControl(self.CP)
     # fork: curve speed for cars whose stock ACC controls the speed (the car port moves its set speed)
-    self.curve_speed = CurveSpeed()
+    self.curve_speed = CurveSpeed(self.CP.carFingerprint)
     self.curve_speed_enabled = False
     self.lead_speed = LeadSpeed()
     self.lead_speed_enabled = False
