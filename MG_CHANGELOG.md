@@ -7,6 +7,12 @@
 - **commit**：od = opendbc（`Mowd/opendbc`），op = openpilot（`Mowd/openpilot`）。HS／ZS 各一個時用「／」分開。
 - 兩車的參數、功能差異見 `MG_HS_ZS_DIFF.md`（在 `hs-phev`）。這份紀錄在兩個分支內容相同，每次變更兩邊一起更新。
 
+## 2026-11-27
+
+| 時間 | 分支 | 變更 | 狀態 | commit |
+|---|---|---|---|---|
+| 23:59 | HS、ZS | **低速降低最大轉向扭力，避免左右來回打滿。** 車主 HS route 7b（11/27 晚上塞車）兩個 bookmark：10 km/h 以下 op 的轉向指令每 0.5 秒在 +3／−3 Nm 之間翻轉，方向盤左右甩到 60°，第一次原廠 ACC 還自己跳掉、儀表顯示請接管。原因是低速時模型的期望曲率每 0.1 秒抖 ±5～10 /km，上游 torque 控制器低速增益很大，MG 的 latAccelFactor 又小（0.9），就變成左右交替的滿力。上游已規定增益不分車款，所以改用上游 Rivian 已在用的「依車速調整最大扭力」：5 km/h 以下 1.6 Nm，到 15 km/h 線性回到 3.0 Nm，carcontroller 和 safety 一致。依據：HS 全部 rlog 中 op 低速穩定跟線只用到 1.5～1.9 Nm（p99），15 km/h 以上路口轉彎才需要 3 Nm；ZS 低速只用到約 1.2 Nm。safety 共用的依車速查表原本固定用最低車速減 1 m/s（只適合低速給較多的 Rivian），改成依表的走向：扭力隨車速上升時用最高車速加 1 m/s，Rivian 不受影響。模擬：新 carcontroller 在急煞、加速、低速蠕行持續左右滿力都沒被 safety 擋下（固定 3 Nm 則被擋 1091 幀） | 🔶 | od `e67cf667`／`5de900e4`<br>op `55b596f1b`／`ba999e17c` |
+
 ## 2026-11-24
 
 | 時間 | 分支 | 變更 | 狀態 | commit |
